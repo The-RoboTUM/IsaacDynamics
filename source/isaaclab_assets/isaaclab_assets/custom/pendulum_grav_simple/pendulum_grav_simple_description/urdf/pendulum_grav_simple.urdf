@@ -1,0 +1,58 @@
+<?xml version="1.0" ?>
+<robot name="pendulum_grav_simple">
+
+<material name="silver">
+  <color rgba="0.700 0.700 0.700 1.000"/>
+</material>
+
+<link name="Base_1">
+  <inertial>
+    <origin xyz="5.228390859409967e-13 5.790023100121781e-19 -0.0024999999999999996" rpy="0 0 0"/>
+    <mass value="3.0826877913351165"/>
+    <inertia ixx="0.004476" iyy="0.004476" izz="0.003853" ixy="-0.0" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://meshes/Base_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://meshes/Base_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="Pendulum_1">
+  <inertial>
+    <origin xyz="1.1063957690715774e-18 -0.05889604644518034 0.002500000000000001" rpy="0 0 0"/>
+    <mass value="51.623721698853316"/>
+    <inertia ixx="23.763165" iyy="0.102335" izz="23.754653" ixy="0.0" iyz="0.752507" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.0 -0.0 -0.0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://meshes/Pendulum_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.0 -0.0 -0.0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://meshes/Pendulum_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="Revolute1" type="revolute">
+  <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+  <parent link="Base_1"/>
+  <child link="Pendulum_1"/>
+  <axis xyz="0.0 0.0 1.0"/>
+  <limit upper="3.14159" lower="-3.14159" effort="100" velocity="100"/>
+</joint>
+
+</robot>
