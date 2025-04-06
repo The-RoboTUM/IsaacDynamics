@@ -22,5 +22,6 @@ gym.register(
     kwargs={
         "env_cfg_entry_point": f"{__name__}.pendulum_grav_simple_env_cfg:PendulumEnvCfg",
         "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
     },
 )
