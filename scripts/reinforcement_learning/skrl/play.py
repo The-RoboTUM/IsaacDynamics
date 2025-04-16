@@ -19,9 +19,17 @@ from isaaclab.app import AppLauncher
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Play a checkpoint of an RL agent from skrl.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
-parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument(
-    "--disable_fabric", action="store_true", default=False, help="Disable fabric and use USD I/O operations."
+    "--video_length",
+    type=int,
+    default=200,
+    help="Length of the recorded video (in steps).",
+)
+parser.add_argument(
+    "--disable_fabric",
+    action="store_true",
+    default=False,
+    help="Disable fabric and use USD I/O operations.",
 )
 parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
@@ -45,7 +53,18 @@ parser.add_argument(
     choices=["AMP", "PPO", "IPPO", "MAPPO"],
     help="The RL algorithm used for training the skrl agent.",
 )
-parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
+parser.add_argument(
+    "--real-time",
+    action="store_true",
+    default=False,
+    help="Run in real-time, if possible.",
+)
+parser.add_argument(
+    "--debugger",
+    action="store_true",
+    default=False,
+    help="Enable or disable debugging mode.",
+)
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -53,6 +72,17 @@ args_cli = parser.parse_args()
 # always enable cameras to record video
 if args_cli.video:
     args_cli.enable_cameras = True
+
+# Handle debugger connection
+if args_cli.debugger:
+    pydevd_name = "pydevd_pycharm"
+    pydevd = __import__(pydevd_name)
+    pydevd.settrace(
+        host="localhost",
+        port=5678,
+        stdoutToServer=True,
+        stderrToServer=True,  # Optional: waits for debugger to attach before running
+    )
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -105,7 +135,10 @@ def main():
 
     # parse configuration
     env_cfg = parse_env_cfg(
-        args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
+        args_cli.task,
+        device=args_cli.device,
+        num_envs=args_cli.num_envs,
+        use_fabric=not args_cli.disable_fabric,
     )
     try:
         experiment_cfg = load_cfg_from_registry(args_cli.task, f"skrl_{algorithm}_cfg_entry_point")
@@ -126,7 +159,9 @@ def main():
         resume_path = os.path.abspath(args_cli.checkpoint)
     else:
         resume_path = get_checkpoint_path(
-            log_root_path, run_dir=f".*_{algorithm}_{args_cli.ml_framework}", other_dirs=["checkpoints"]
+            log_root_path,
+            run_dir=f".*_{algorithm}_{args_cli.ml_framework}",
+            other_dirs=["checkpoints"],
         )
     log_dir = os.path.dirname(os.path.dirname(resume_path))
 
