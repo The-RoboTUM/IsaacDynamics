@@ -21,8 +21,9 @@ sudo apt install cmake build-essential
 ./isaaclab.sh --install # or "./isaaclab.sh -i"
 ```
 
-If you use the jax framework make sure to run the following to get all of the dependencies:
+If you use the jax framework make sure to run the following to get all the dependencies:
 ```bash
+pip install --upgrade "jax[cuda12]"
 pip install skrl["all"]
 ```
 
@@ -81,4 +82,11 @@ if args_cli.debugger:
         stdoutToServer=True,
         stderrToServer=True,  # Optional: waits for debugger to attach before running
     )
+```
+
+If you need to setup wandb again:
+```bash
+export WANDB_API_KEY=3a8c037b3fd5bda9fb344d61686b81afc661b0cc
+pip install wandb
+wandb login
 ```

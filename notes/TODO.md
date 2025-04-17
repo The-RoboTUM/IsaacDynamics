@@ -1,18 +1,22 @@
 # TODO List
 
 ## 📌 High-Priority Tasks
-- Look into how to graph your learning (tensorflow)
-- Choose the next environments to create
+- Create a managed env for
+  - Double pendulum
+  - Acrobot
+  - Slip walker
+  - Articulated walker
+- Document the issue with jax and memory allocation & write an issue in isaac sim
+- Document how to use the debugger
 - Read the notes from the previous meeting with Daniel, decide on tasks and add them here (Then proceed)
 
 ## 🔄 In Progress
 - [ ]
 
 ## ✅ Completed
-- [x] Test if JAX works with SKRL
-- [x] Update documentation how to use JAX
-- [x] Update documentation on commands to install skrl when installing isaac
-- [x] Find out how to run and save specific models
+- [x] Look into how to graph your learning (tensorflow) & setup Wandb
+- [x] Choose the next environments to create
 
 ## 💡 Future Ideas
 - Figure out how to make the env look nice with nice cameras
+- Look into how to use your local version of skrl, since this one has the fix you made

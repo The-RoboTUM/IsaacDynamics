@@ -1,8 +1,10 @@
 # Dev Notes
 
-## 25.03.25
-- Starting setting up the project
-- Copied the code from my previous project
+# 16.04.25
+- Today I have a lot of time to work on the project, let's see if I manage to record some data
+- Managed to graph different performance metrics in tensorflow and wandb
+- Choose the next environments to create and created some models
+- Will be creating a repo only to handle the python extension to create URDFs
 
 # 15.04.25
 - It's been a while since I continued the notes
@@ -10,3 +12,7 @@
 - Tested JAX with SKRL
 - Updated the documentation on how to use JAX and commands to install skrl when installing isaac
 - Modified the scripts for a rudimentary saving and loading models based on my wishes
+
+## 25.03.25
+- Starting setting up the project
+- Copied the code from my previous project
