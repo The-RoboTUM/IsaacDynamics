@@ -1,5 +1,9 @@
 # Dev Notes
 
+# 22.04.25
+- Today I need to finish something I could demo for the progress of my thesis
+-
+
 # 16.04.25
 - Today I have a lot of time to work on the project, let's see if I manage to record some data
 - Managed to graph different performance metrics in tensorflow and wandb

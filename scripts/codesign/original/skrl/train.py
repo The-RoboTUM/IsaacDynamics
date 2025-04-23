@@ -235,17 +235,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # wrap around environment for skrl
     env = SkrlVecEnvWrapper(env, ml_framework=args_cli.ml_framework)  # same as: `wrap_env(env, wrapper="auto")`
 
-    # -------------------------------------------------------
-    # # Patch skrl's Agent.init for JAX to prevent PyTorch-specific model logging
-    # from skrl.agents.jax.base import Agent as JAXAgent
-    #
-    # def safe_init(self, trainer_cfg=None):
-    #     # skip trying to access ._modules or .net
-    #     self.initialized = True
-    #
-    # JAXAgent.init = safe_init
-    # -------------------------------------------------------
-
     # configure and instantiate the skrl runner
     # https://skrl.readthedocs.io/en/latest/api/utils/runner.html
     runner = Runner(env, agent_cfg)

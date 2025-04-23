@@ -10,6 +10,7 @@ through isaac lab.
 - [Params](#params)
 - [Information](#information)
 - [Useful Commands](#useful-commands)
+- [Known Issues](#known-issues)
 
 ## Installation
 
@@ -60,17 +61,20 @@ To train an environments:
 
 ## Useful commands
 
-Run if the isaac sim warning persists:
-
-```bash
-gsettings set org.gnome.mutter check-alive-timeout 10000
-```
 Run to train pendulum environment:
 ```bash
 ./isaaclab.sh -p scripts/reinforcement_learning/skrl/train.py --task Isaac-Pendulum-v0 --num_envs 64 --ml_framework jax
 ```
 
-If you want to debug in pycharm, create a conditional in the script like this:
+If you need to setup wandb again:
+```bash
+export WANDB_API_KEY=3a8c037b3fd5bda9fb344d61686b81afc661b0cc
+pip install wandb
+wandb login
+```
+
+If you want to debug in pycharm, create a conditional in the script like this and also create a run configuration of
+"Python Debugger" with the code mappings pointing at the root folder:
 ```python
 # Handle debugger connection
 if args_cli.debugger:
@@ -84,9 +88,18 @@ if args_cli.debugger:
     )
 ```
 
-If you need to setup wandb again:
+## Known Issues
+
+If the isaac sim warning that is stuck persists run:
+
 ```bash
-export WANDB_API_KEY=3a8c037b3fd5bda9fb344d61686b81afc661b0cc
-pip install wandb
-wandb login
+gsettings set org.gnome.mutter check-alive-timeout 10000
+```
+
+If you run out of GPU memory while using both isaac AND jax on it, then allow dynamic memory allocation to the start of
+your script:
+```python
+# this is required to be able to run both simulation and learning in cpu
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
 ```
