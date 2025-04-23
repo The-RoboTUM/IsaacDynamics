@@ -13,8 +13,13 @@ a more user-friendly way.
 """Launch Isaac Sim Simulator first."""
 
 import argparse
+import os
 
 from isaaclab.app import AppLauncher
+
+# this is required to be able to run both simulation and learning in cpu
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Play a checkpoint of an RL agent from skrl.")

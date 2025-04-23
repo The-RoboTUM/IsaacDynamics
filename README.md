@@ -1,100 +1,105 @@
-![Isaac Lab](docs/source/_static/isaaclab.jpg)
+# IsaacDynamics
 
----
+This project is the first implementation of a co-design framework for the discovery of mechanisms and controllers
+through isaac lab.
 
-# Isaac Lab
+## Table of Contents
 
-[![IsaacSim](https://img.shields.io/badge/IsaacSim-4.5.0-silver.svg)](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html)
-[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://docs.python.org/3/whatsnew/3.10.html)
-[![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/20.04/)
-[![Windows platform](https://img.shields.io/badge/platform-windows--64-orange.svg)](https://www.microsoft.com/en-us/)
-[![pre-commit](https://img.shields.io/github/actions/workflow/status/isaac-sim/IsaacLab/pre-commit.yaml?logo=pre-commit&logoColor=white&label=pre-commit&color=brightgreen)](https://github.com/isaac-sim/IsaacLab/actions/workflows/pre-commit.yaml)
-[![docs status](https://img.shields.io/github/actions/workflow/status/isaac-sim/IsaacLab/docs.yaml?label=docs&color=brightgreen)](https://github.com/isaac-sim/IsaacLab/actions/workflows/docs.yaml)
-[![License](https://img.shields.io/badge/license-BSD--3-yellow.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![License](https://img.shields.io/badge/license-Apache--2.0-yellow.svg)](https://opensource.org/license/apache-2-0)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Params](#params)
+- [Information](#information)
+- [Useful Commands](#useful-commands)
+- [Known Issues](#known-issues)
 
+## Installation
 
-**Isaac Lab** is a GPU-accelerated, open-source framework designed to unify and simplify robotics research workflows, such as reinforcement learning, imitation learning, and motion planning. Built on [NVIDIA Isaac Sim](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html), it combines fast and accurate physics and sensor simulation, making it an ideal choice for sim-to-real transfer in robotics.
+Instructions for installation.
+Example:
 
-Isaac Lab provides developers with a range of essential features for accurate sensor simulation, such as RTX-based cameras, LIDAR, or contact sensors. The framework's GPU acceleration enables users to run complex simulations and computations faster, which is key for iterative processes like reinforcement learning and data-intensive tasks. Moreover, Isaac Lab can run locally or be distributed across the cloud, offering flexibility for large-scale deployments.
-
-## Key Features
-
-Isaac Lab offers a comprehensive set of tools and environments designed to facilitate robot learning:
-- **Robots**: A diverse collection of robots, from manipulators, quadrupeds, to humanoids, with 16 commonly available models.
-- **Environments**: Ready-to-train implementations of more than 30 environments, which can be trained with popular reinforcement learning frameworks such as RSL RL, SKRL, RL Games, or Stable Baselines. We also support multi-agent reinforcement learning.
-- **Physics**: Rigid bodies, articulated systems, deformable objects
-- **Sensors**: RGB/depth/segmentation cameras, camera annotations, IMU, contact sensors, ray casters.
-
-
-## Getting Started
-
-Our [documentation page](https://isaac-sim.github.io/IsaacLab) provides everything you need to get started, including detailed tutorials and step-by-step guides. Follow these links to learn more about:
-
-- [Installation steps](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html#local-installation)
-- [Reinforcement learning](https://isaac-sim.github.io/IsaacLab/main/source/overview/reinforcement-learning/rl_existing_scripts.html)
-- [Tutorials](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/index.html)
-- [Available environments](https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html)
-
-
-## Contributing to Isaac Lab
-
-We wholeheartedly welcome contributions from the community to make this framework mature and useful for everyone.
-These may happen as bug reports, feature requests, or code contributions. For details, please check our
-[contribution guidelines](https://isaac-sim.github.io/IsaacLab/main/source/refs/contributing.html).
-
-## Show & Tell: Share Your Inspiration
-
-We encourage you to utilize our [Show & Tell](https://github.com/isaac-sim/IsaacLab/discussions/categories/show-and-tell) area in the
-`Discussions` section of this repository. This space is designed for you to:
-
-* Share the tutorials you've created
-* Showcase your learning content
-* Present exciting projects you've developed
-
-By sharing your work, you'll inspire others and contribute to the collective knowledge
-of our community. Your contributions can spark new ideas and collaborations, fostering
-innovation in robotics and simulation.
-
-## Troubleshooting
-
-Please see the [troubleshooting](https://isaac-sim.github.io/IsaacLab/main/source/refs/troubleshooting.html) section for
-common fixes or [submit an issue](https://github.com/isaac-sim/IsaacLab/issues).
-
-For issues related to Isaac Sim, we recommend checking its [documentation](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/overview.html)
-or opening a question on its [forums](https://forums.developer.nvidia.com/c/agx-autonomous-machines/isaac/67).
-
-## Support
-
-* Please use GitHub [Discussions](https://github.com/isaac-sim/IsaacLab/discussions) for discussing ideas, asking questions, and requests for new features.
-* Github [Issues](https://github.com/isaac-sim/IsaacLab/issues) should only be used to track executable pieces of work with a definite scope and a clear deliverable. These can be fixing bugs, documentation issues, new features, or general updates.
-
-## Connect with the NVIDIA Omniverse Community
-
-Have a project or resource you'd like to share more widely? We'd love to hear from you! Reach out to the
-NVIDIA Omniverse Community team at OmniverseCommunity@nvidia.com to discuss potential opportunities
-for broader dissemination of your work.
-
-Join us in building a vibrant, collaborative ecosystem where creativity and technology intersect. Your
-contributions can make a significant impact on the Isaac Lab community and beyond!
-
-## License
-
-The Isaac Lab framework is released under [BSD-3 License](LICENSE). The `isaaclab_mimic` extension and its corresponding standalone scripts are released under [Apache 2.0](LICENSE-mimic). The license files of its dependencies and assets are present in the [`docs/licenses`](docs/licenses) directory.
-
-## Acknowledgement
-
-Isaac Lab development initiated from the [Orbit](https://isaac-orbit.github.io/) framework. We would appreciate if you would cite it in academic publications as well:
-
+```bash
+sudo apt install cmake build-essential
+./isaaclab.sh --install # or "./isaaclab.sh -i"
 ```
-@article{mittal2023orbit,
-   author={Mittal, Mayank and Yu, Calvin and Yu, Qinxi and Liu, Jingzhou and Rudin, Nikita and Hoeller, David and Yuan, Jia Lin and Singh, Ritvik and Guo, Yunrong and Mazhar, Hammad and Mandlekar, Ajay and Babich, Buck and State, Gavriel and Hutter, Marco and Garg, Animesh},
-   journal={IEEE Robotics and Automation Letters},
-   title={Orbit: A Unified Simulation Framework for Interactive Robot Learning Environments},
-   year={2023},
-   volume={8},
-   number={6},
-   pages={3740-3747},
-   doi={10.1109/LRA.2023.3270034}
-}
+
+If you use the jax framework make sure to run the following to get all the dependencies:
+```bash
+pip install --upgrade "jax[cuda12]"
+pip install skrl["all"]
+```
+
+## Usage
+
+To run the testing environments:
+```bash
+./isaaclab.sh -p scripts/codesign/<environment_test>
+```
+
+To train an environments:
+```bash
+./isaaclab.sh -p scripts/reinforcement_learning/skrl/train.py --task <environment_entry_point> --num_envs
+<parallel_robots>
+```
+
+## Params
+
+- `--task`: Which environment are you using. All environments are defined in `source/isaaclab_tasks/isaaclab_tasks`
+- `--num_envs`: How many parallel environments to use now
+- `--ml_framework`: Either `torch` or `jax`, use jax for better results
+- `--experiment_name`: What are you calling the current run
+- `--debugger`: Set if want to connect to the pycharm debugger
+- `--model_path`: Only relevant for play, how to specify model loading destination, will use latest if not given
+
+## Information
+
+- To create an environment, a .usd file must be created from a .urdf
+- The .usd files from this project are to be found at `source/isaaclab_assets/isaaclab_assets/custom`. The .py files set up the simulation.
+- The task definitions (RL-problem) are defined in `source/isaaclab_tasks/isaaclab_tasks`. Inside there are the
+  managed tasks and the direct tasks. Managed tasks use higher level abstractions that reduce the difficulty while
+  direct tasks allow granular control.
+- For now, all the environments are being run as managed tasks
+
+## Useful commands
+
+Run to train pendulum environment:
+```bash
+./isaaclab.sh -p scripts/reinforcement_learning/skrl/train.py --task Isaac-Pendulum-v0 --num_envs 64 --ml_framework jax
+```
+
+If you need to setup wandb again:
+```bash
+export WANDB_API_KEY=3a8c037b3fd5bda9fb344d61686b81afc661b0cc
+pip install wandb
+wandb login
+```
+
+If you want to debug in pycharm, create a conditional in the script like this and also create a run configuration of
+"Python Debugger" with the code mappings pointing at the root folder:
+```python
+# Handle debugger connection
+if args_cli.debugger:
+    import pydevd_pycharm
+
+    pydevd_pycharm.settrace(
+        host="localhost",
+        port=5678,
+        stdoutToServer=True,
+        stderrToServer=True,  # Optional: waits for debugger to attach before running
+    )
+```
+
+## Known Issues
+
+If the isaac sim warning that is stuck persists run:
+
+```bash
+gsettings set org.gnome.mutter check-alive-timeout 10000
+```
+
+If you run out of GPU memory while using both isaac AND jax on it, then allow dynamic memory allocation to the start of
+your script:
+```python
+# this is required to be able to run both simulation and learning in cpu
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
 ```

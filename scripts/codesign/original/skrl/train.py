@@ -13,9 +13,14 @@ a more user-friendly way.
 """Launch Isaac Sim Simulator first."""
 
 import argparse
+import os
 import sys
 
 from isaaclab.app import AppLauncher
+
+# this is required to be able to run both simulation and learning in cpu
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with skrl.")
@@ -70,10 +75,33 @@ parser.add_argument(
     help="The name of the experiment. If not specified, the experiment name will be left blank.",
 )
 
+parser.add_argument(
+    "--debugger",
+    action="store_true",
+    default=False,
+    help="Enable or disable debugging mode.",
+)
+
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli, hydra_args = parser.parse_known_args()
+
+# Handle debugger connection
+if args_cli.debugger:
+    pydevd_name = "pydevd_pycharm"
+    pydevd = __import__(pydevd_name)
+    pydevd.settrace(
+        host="localhost",
+        port=5678,
+        stdoutToServer=True,
+        stderrToServer=True,  # Optional: waits for debugger to attach before running
+    )
+
+import torch
+
+torch.tensor([1.0], device="cuda:0")
+
 # always enable cameras to record video
 if args_cli.video:
     args_cli.enable_cameras = True
