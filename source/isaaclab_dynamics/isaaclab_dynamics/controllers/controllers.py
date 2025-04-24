@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import numpy as np
 import time
 import torch
 
@@ -41,7 +42,7 @@ class ControllerBase(ABC):
         self.args_cli = args_cli or {}
         self.is_initialized = False
 
-    def setup(self, env, config=None, seed=None):
+    def setup(self, env, dt, config=None, seed=None):
         """
         Perform common setup tasks for the controller.
 
@@ -50,16 +51,34 @@ class ControllerBase(ABC):
         :param seed: Seed value for reproducibility (optional)
         """
         self.is_initialized = True
+        self.dt = dt
+
+    def run(self, env, alive_check, args=None):
+        obs, _ = env.reset()
+        timestep = 0
+
+        # Main simulation loop
+        while alive_check():
+            start_time = time.time()
+            with torch.inference_mode():
+
+                # Take a step in the environment with the computed action
+                actions = self.step(obs, args=args)
+                obs, _, _, _, _ = env.step(actions)
+
+            # Handle video-related settings
+            if self.args_cli.video:
+                timestep += 1
+                if timestep == self.args_cli.video_length:
+                    break
+
+            # Sleep for real-time simulation if needed
+            sleep_time = self.dt - (time.time() - start_time)
+            if self.args_cli.real_time and sleep_time > 0:
+                time.sleep(sleep_time)
 
     @abstractmethod
-    def run(self, env, dt, alive_check):
-        """
-        Abstract method to be implemented by subclasses.
-
-        :param env: Environment instance
-        :param dt: Timestep duration
-        :param alive_check: Function to check if the process should continue
-        """
+    def step(self, obs, args=None):
         pass
 
 
@@ -76,15 +95,27 @@ class ControllerRL(ControllerBase):
         self.algorithm = args_cli.algorithm.lower()
         self.agent_cfg = None
 
-    def setup(self, env, config=None, seed=None):
+    def setup(self, env, dt, config=None, seed=None):
         """
-        Setup the RL controller by configuring the environment and the agent.
+        Sets up the given environment, configuration parameters, and associated settings
+        for training or testing. Configures the underlying Machine Learning framework,
+        agent parameters, and environment handling based on the provided mode
+        ('train' or 'test'). Also adjusts agent-specific configuration
+        depending on the runtime parameters.
 
-        :param env: Environment instance
-        :param config: Configuration dictionary
-        :param seed: Seed for reproducibility (optional)
+        Args:
+            env: The original environment to be wrapped and configured.
+            dt: The time step or time interval for the simulation or environment updates.
+            config: Optional configuration dictionary containing parameters for the
+                agent, trainer, and experiment setup. Defaults to None.
+            seed: An optional value to set the random seed for reproducibility. If not
+                provided, the seed is fetched from the provided configuration.
+
+        Returns:
+            tuple: A tuple containing the wrapped and configured environment and the
+                final agent configuration dictionary.
         """
-        super().setup(env, config, seed)
+        super().setup(env, dt, config, seed)
         self.agent_cfg = config
 
         # Configure ML framework (e.g., JAX or NumPy backend for jax framework)
@@ -110,7 +141,7 @@ class ControllerRL(ControllerBase):
         env = SkrlVecEnvWrapper(env, ml_framework=self.args_cli.ml_framework)
         return env, self.agent_cfg
 
-    def run(self, env, dt, alive_check, resume_path=None):
+    def run(self, env, alive_check, args=None, resume_path=None):
         """
         Run the RL controller in either train or test mode.
 
@@ -139,32 +170,19 @@ class ControllerRL(ControllerBase):
             runner.run()
         elif self.args_cli.mode == "test":
             runner.agent.set_running_mode("eval")
-            obs, _ = env.reset()
-            timestep = 0
+            super().run(env, alive_check, args={"runner": runner, "env": env})
 
-            # Main simulation loop
-            while alive_check():
-                start_time = time.time()
+    def step(self, obs, args=None):
+        runner = args.get("runner")
+        env = args.get("env")
 
-                # Compute actions using the agent
-                with torch.inference_mode():
-                    outputs = runner.agent.act(obs, timestep=0, timesteps=0)
-                    if hasattr(env, "possible_agents"):
-                        actions = {a: outputs[-1][a].get("mean_actions", outputs[0][a]) for a in env.possible_agents}
-                    else:
-                        actions = outputs[-1].get("mean_actions", outputs[0])
-                    obs, _, _, _, _ = env.step(actions)
+        outputs = runner.agent.act(obs, timestep=0, timesteps=0)
+        if hasattr(env, "possible_agents"):
+            actions = {a: outputs[-1][a].get("mean_actions", outputs[0][a]) for a in env.possible_agents}
+        else:
+            actions = outputs[-1].get("mean_actions", outputs[0])
 
-                # Handle video-related settings
-                if self.args_cli.video:
-                    timestep += 1
-                    if timestep == self.args_cli.video_length:
-                        break
-
-                # Sleep for real-time simulation if needed
-                sleep_time = dt - (time.time() - start_time)
-                if self.args_cli.real_time and sleep_time > 0:
-                    time.sleep(sleep_time)
+        return actions
 
 
 # Controller class for keyboard-based interaction
@@ -211,7 +229,7 @@ class ControllerKeyboard(ControllerBase):
         listener = Listener(on_press=on_press, on_release=on_release)
         listener.start()
 
-    def setup(self, env, config=None, seed=None):
+    def setup(self, env, dt, config=None, seed=None):
         """
         Perform setup tasks for the keyboard controller.
 
@@ -219,10 +237,10 @@ class ControllerKeyboard(ControllerBase):
         :param config: Configuration dictionary (optional)
         :param seed: (Unused) Seed value
         """
-        super().setup(env, config, seed)
+        super().setup(env, dt, config, seed)
         return env, config
 
-    def run(self, env, dt, alive_check, resume_path=None):
+    def run(self, env, alive_check, args=None, resume_path=None):
         """
         Execute the keyboard controller's main loop.
 
@@ -231,14 +249,9 @@ class ControllerKeyboard(ControllerBase):
         :param alive_check: Function to check if the process should continue
         :param resume_path: Unused for keyboard controller
         """
-        obs, _ = env.reset()
-        while alive_check():
-            with torch.inference_mode():
-                # Simulate environment step by translating key presses to joint efforts
-                joint_efforts = torch.tensor([[self.step()]])
-                obs, rew, terminated, truncated, info = env.step(joint_efforts)
+        super().run(env, alive_check, args=args)
 
-    def step(self, inputs=None):
+    def step(self, obs, args=None):
         """
         Process input state and compute actions based on key presses.
 
@@ -250,3 +263,72 @@ class ControllerKeyboard(ControllerBase):
         # Example action selection based on keyboard press
         action = 1 if self.key_status["left"] else -1 if self.key_status["right"] else 0
         return action
+
+
+class ControllerPID(ControllerBase):
+    """
+    Implementation of a PID controller for controlling environments
+    where a proportional-integral-derivative control system is suitable.
+    """
+
+    def __init__(self, args_cli=None):
+        """
+        Initialize the PID controller parameters and state variables.
+
+        :param args_cli: Command line arguments or configuration dictionary
+        """
+        super().__init__(args_cli)
+        self.Kp = None  # Proportional gain
+        self.Ki = None  # Integral gain
+        self.Kd = None  # Derivative gain
+        self.dt = 0
+
+        self.setpoint = None  # Desired target value
+        self.integral = 0.0  # Integral term accumulator
+        self.prev_error = None  # Previous error term for derivative calculation
+
+    def setup(self, env, dt, config=None, seed=None):
+        """
+        Setup the PID controller.
+
+        :param env: The environment instance
+        :param config: Configuration dictionary (optional)
+        :param seed: Seed value for reproducibility (optional)
+        """
+        super().setup(env, dt, config, seed)
+        self.Kp = 1.0  # Proportional gain
+        self.Ki = 0.01  # Integral gain
+        self.Kd = 0.5  # Derivative gain
+        self.setpoint = np.pi / 2  # Desired target value
+        return env, config
+
+    def run(self, env, alive_check, resume_path=None):
+        """
+        Execute the PID controller's control loop.
+
+        :param env: The environment instance
+        :param dt: Timestep duration
+        :param alive_check: Function to check whether the process should continue
+        """
+        super().run(env, alive_check)
+
+    def step(self, obs, args=None):
+        # Get the current value
+        current_value = obs["policy"][0, 0].item()
+
+        # Calculate the current error
+        error = self.setpoint - current_value
+
+        # Compute the integral term
+        self.integral += error * self.dt
+
+        # Compute the derivative term
+        derivative = (error - self.prev_error) / self.dt if self.prev_error is not None else 0.0
+
+        # Compute the control action
+        joint_efforts = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+
+        # Update the previous error
+        self.prev_error = error
+
+        return joint_efforts

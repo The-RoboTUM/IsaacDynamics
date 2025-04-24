@@ -6,16 +6,18 @@
   - Acrobot
   - Slip walker
   - Articulated walker
-- Write a data recording class
+- Encapsulate most of the complexity of the environment in own class
+- Write a trainer backend for RL controllers
 - Write a graphing class
 - Write a visualization script
 
 ## 🔄 In Progress
-- [ ] Write a section of the run script handling variable models and controllers etc.
-- [ ] Write a trainer backend for RL controllers
-- [ ] Encapsulate most of the complexity of the environment in own class
+- [X] Write a data recording class
 
 ## ✅ Completed
+- [x] Unify the run script into one method
+- [X] Write a PID controller for the pendulum
+- [x] Write a section of the run script handling variable models and controllers etc.
 - [x] Document the issue with jax and memory allocation & write an issue in isaac sim
 - [x] Document how to use the debugger
 - [x] Read the notes from the previous meeting with Daniel, decide on tasks and add them here (Then proceed)

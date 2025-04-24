@@ -256,11 +256,13 @@ def main(env_cfg, agent_cfg):
         controller = controllers.ControllerRL(args_cli=args_cli)
     elif args_cli.controller == "keyboard":
         controller = controllers.ControllerKeyboard(args_cli=args_cli)
+    elif args_cli.controller == "pid":
+        controller = controllers.ControllerPID(args_cli=args_cli)
     else:
         raise ValueError("Invalid controller specified.")
 
     # Wrap and configure environment
-    env, _ = controller.setup(env, agent_cfg, seed=seed)
+    env, _ = controller.setup(env, dt, agent_cfg, seed=seed)
 
     # Logging and video recording setup
     log_dir, resume_path = configure_logging(args_cli, agent_cfg)
@@ -270,7 +272,7 @@ def main(env_cfg, agent_cfg):
     save_configuration(args_cli, log_dir, env_cfg, agent_cfg)
 
     # Run the environment with the controller
-    controller.run(env, dt, simulation_app.is_running, resume_path)
+    controller.run(env, simulation_app.is_running, resume_path=resume_path)
     env.close()
 
 
