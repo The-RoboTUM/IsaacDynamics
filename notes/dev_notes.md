@@ -1,8 +1,12 @@
 # Dev Notes
 
-# 22.04.25
+# 28.04.25
+- Today I am finishing the data gathering mechanisms and the probability modeling classes to calculate the metric
+- Will be closing this branch in the meantime
+
+# 23.04.25
 - Today I need to finish something I could demo for the progress of my thesis
--
+- Until this day I finished the control environment, implemented and tested a few controllers
 
 # 16.04.25
 - Today I have a lot of time to work on the project, let's see if I manage to record some data

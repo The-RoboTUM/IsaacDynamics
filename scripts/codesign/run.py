@@ -108,6 +108,12 @@ def setup_parser(applauncher):
         default="",
         help="Name of the experiment for logging purposes.",
     )
+    parser.add_argument(
+        "--record",
+        action="store_true",
+        default=False,
+        help="Record observations and actions.",
+    )
 
     # Debugging and runtime arguments
     parser.add_argument("--debugger", action="store_true", default=False, help="Enable debugging mode.")
@@ -157,12 +163,11 @@ if args_cli.video:
 
 """Rest everything follows."""
 
+# Post app-launcher imports
 import gymnasium as gym
 import random
 
-from isaaclab_dynamics import controllers
-
-# Post app-launcher imports
+from isaaclab_dynamics.controllers import base_controllers, wrappers
 from isaaclab_dynamics.utilities import configure_logging, save_configuration
 
 # from isaaclab.envs import (
@@ -253,13 +258,15 @@ def main(env_cfg, agent_cfg):
 
     # Controller setup
     if args_cli.controller == "rl":
-        controller = controllers.ControllerRL(args_cli=args_cli)
+        controller = base_controllers.ControllerRL(args_cli=args_cli)
     elif args_cli.controller == "keyboard":
-        controller = controllers.ControllerKeyboard(args_cli=args_cli)
+        controller = base_controllers.ControllerKeyboard(args_cli=args_cli)
     elif args_cli.controller == "pid":
-        controller = controllers.ControllerPID(args_cli=args_cli)
+        controller = base_controllers.ControllerPID(args_cli=args_cli)
     else:
         raise ValueError("Invalid controller specified.")
+    if args_cli.record:
+        controller = wrappers.ControllerLogger(controller, args_cli=args_cli)
 
     # Wrap and configure environment
     env, _ = controller.setup(env, dt, agent_cfg, seed=seed)
@@ -272,7 +279,7 @@ def main(env_cfg, agent_cfg):
     save_configuration(args_cli, log_dir, env_cfg, agent_cfg)
 
     # Run the environment with the controller
-    controller.run(env, simulation_app.is_running, resume_path=resume_path)
+    controller.run(env, simulation_app.is_running, controller.iterate, resume_path=resume_path)
     env.close()
 
 

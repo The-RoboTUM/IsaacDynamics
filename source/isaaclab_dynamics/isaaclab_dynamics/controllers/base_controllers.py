@@ -33,27 +33,31 @@ if version.parse(skrl.__version__) < version.parse(SKRL_VERSION):
 # Base class for controllers
 class ControllerBase(ABC):
     """
-    Abstract base class for controllers. Provides a standard interface
-    for setup and execution, as well as shared setup behavior.
+    Defines an abstract base class for controllers in simulation environments.
+
+    This class serves as a base for building specific controllers, providing common
+    setup, initialization, and execution functionalities. Subclasses must
+    implement the `step` method to define specific behavior for each controller.
+
+    Attributes:
+        args_cli (dict): Dictionary containing command-line arguments provided
+            to the controller.
+        is_initialized (bool): Indicates whether the controller has been
+            initialized and set up.
+        dt (float): Time step duration for the simulation.
     """
 
     def __init__(self, args_cli=None):
         # Store command line arguments, if provided
         self.args_cli = args_cli or {}
         self.is_initialized = False
+        self.dt = 0
 
     def setup(self, env, dt, config=None, seed=None):
-        """
-        Perform common setup tasks for the controller.
-
-        :param env: Environment instance
-        :param config: Configuration dictionary (optional)
-        :param seed: Seed value for reproducibility (optional)
-        """
         self.is_initialized = True
         self.dt = dt
 
-    def run(self, env, alive_check, args=None):
+    def run(self, env, alive_check, iterate, args=None, resume_path=None):
         obs, _ = env.reset()
         timestep = 0
 
@@ -63,8 +67,7 @@ class ControllerBase(ABC):
             with torch.inference_mode():
 
                 # Take a step in the environment with the computed action
-                actions = self.step(obs, args=args)
-                obs, _, _, _, _ = env.step(actions)
+                actions, obs, _, _, _, _ = iterate(env, obs, args=args)
 
             # Handle video-related settings
             if self.args_cli.video:
@@ -81,12 +84,30 @@ class ControllerBase(ABC):
     def step(self, obs, args=None):
         pass
 
+    def iterate(self, env, obs, args=None):
+        actions = self.step(obs, args=args)
+        obs, reward, terminated, truncated, info = env.step(actions)
+        return actions, obs, reward, terminated, truncated, info
+
 
 # Controller class for RL-based algorithms
 class ControllerRL(ControllerBase):
     """
-    Implementation of RL-based controller. Includes setup and runtime logic
-    for training and testing reinforcement learning agents.
+    A Reinforcement Learning (RL) Controller class that manages the setup, configuration,
+    and execution of reinforcement learning algorithms in different environments. It
+    facilitates compatibility with multiple machine learning frameworks (e.g., PyTorch,
+    JAX), supports both training and testing modes, and allows seamless handling of
+    multi-agent and single-agent environments.
+
+    This class serves as an interface for defining the pipeline of RL-based controllers,
+    including environment setup, algorithm-specific configurations, and running of
+    agents.
+
+    Attributes:
+        algorithm (str): The name of the algorithm to be used, set based on command-line
+            arguments and converted to lowercase.
+        agent_cfg (dict): Configuration dictionary for the RL agent. It stores agent-
+            specific parameters such as trainer settings and runtime configurations.
     """
 
     def __init__(self, args_cli=None):
@@ -141,14 +162,22 @@ class ControllerRL(ControllerBase):
         env = SkrlVecEnvWrapper(env, ml_framework=self.args_cli.ml_framework)
         return env, self.agent_cfg
 
-    def run(self, env, alive_check, args=None, resume_path=None):
+    def run(self, env, alive_check, iterate, args=None, resume_path=None):
         """
-        Run the RL controller in either train or test mode.
+        Runs the main process for setting up and executing the environment and agent interaction.
 
-        :param env: Environment instance
-        :param dt: Timestep duration
-        :param alive_check: Function to check if the process should continue
-        :param resume_path: Path to load a saved agent checkpoint (optional)
+        This method dynamically imports the appropriate Runner class based on the machine learning
+        framework in use, initializes the runner, optionally loads a pre-trained model checkpoint,
+        and executes the controller in either training or testing mode.
+
+        Args:
+            env: The environment instance in which the agent will operate.
+            alive_check: A function or mechanism used to determine if the process is alive and should
+                continue running.
+            args: Optional; Additional arguments that might be required for running the process.
+                Defaults to None.
+            resume_path: Optional; The file path to a pre-trained model checkpoint that can be loaded
+                for resuming the process. Defaults to None.
         """
         # Import the appropriate Runner class dynamically
         Runner = None
@@ -170,9 +199,26 @@ class ControllerRL(ControllerBase):
             runner.run()
         elif self.args_cli.mode == "test":
             runner.agent.set_running_mode("eval")
-            super().run(env, alive_check, args={"runner": runner, "env": env})
+            super().run(env, alive_check, iterate, args={"runner": runner, "env": env})
 
     def step(self, obs, args=None):
+        """
+        Executes a single step in the environment using the provided observations and additional
+        arguments. This method retrieves actions from the associated agent based on the observations
+        and returns the computed actions. The implementation supports environments with multiple
+        possible agents, where actions are generated for each agent individually.
+
+        Args:
+            obs: Observations from the environment, provided to the agent to compute subsequent
+                actions.
+            args: Optional dictionary containing additional arguments. It is expected to include
+                'runner' (agent manager) and 'env' (environment object).
+
+        Returns:
+            dict: A dictionary where the keys are agent identifiers (for environments with
+                multiple agents) or a single key for non-multi-agent environments.
+                The values are the corresponding actions computed by the agent.
+        """
         runner = args.get("runner")
         env = args.get("env")
 
@@ -188,8 +234,19 @@ class ControllerRL(ControllerBase):
 # Controller class for keyboard-based interaction
 class ControllerKeyboard(ControllerBase):
     """
-    Implementation of a keyboard-based controller. This controller
-    listens for keyboard events and maps them to environment actions.
+    Represents a keyboard input controller that listens for key presses to control
+    actions. This class provides functionality to set up and manage key-based input
+    for interactive environments, allowing for dynamic control during runtime.
+
+    The class initializes a key-status map to track the current state of directional
+    keys (left, right, up, down). It uses a background thread to handle keyboard
+    input asynchronously via a listener. The class also provides integration with
+    an environment setup and step-by-step processing of actions based on key inputs.
+
+    Attributes:
+        key_status (dict): A map containing the status of directional keys, with
+            boolean values indicating whether a key is pressed (True) or released
+            (False).
     """
 
     def __init__(self, args_cli=None):
@@ -230,45 +287,42 @@ class ControllerKeyboard(ControllerBase):
         listener.start()
 
     def setup(self, env, dt, config=None, seed=None):
-        """
-        Perform setup tasks for the keyboard controller.
-
-        :param env: Environment instance
-        :param config: Configuration dictionary (optional)
-        :param seed: (Unused) Seed value
-        """
         super().setup(env, dt, config, seed)
         return env, config
 
-    def run(self, env, alive_check, args=None, resume_path=None):
-        """
-        Execute the keyboard controller's main loop.
-
-        :param env: Environment instance
-        :param dt: Timestep duration
-        :param alive_check: Function to check if the process should continue
-        :param resume_path: Unused for keyboard controller
-        """
-        super().run(env, alive_check, args=args)
+    def run(self, env, alive_check, iterate, args=None, resume_path=None):
+        super().run(env, alive_check, iterate, args=args, resume_path=resume_path)
 
     def step(self, obs, args=None):
-        """
-        Process input state and compute actions based on key presses.
-
-        :param inputs: (Optional) Input values for additional logic
-        :return: Action value based on keyboard status
-        """
         if not self.is_initialized:
             raise RuntimeError("Controller is not set up. Call the 'setup()' method before stepping.")
         # Example action selection based on keyboard press
         action = 1 if self.key_status["left"] else -1 if self.key_status["right"] else 0
-        return action
+        return torch.tensor([[action]])
 
 
 class ControllerPID(ControllerBase):
     """
-    Implementation of a PID controller for controlling environments
-    where a proportional-integral-derivative control system is suitable.
+    ControllerPID implements a Proportional-Integral-Derivative (PID) control
+    strategy for managing system behavior by minimizing the difference
+    (error) between a setpoint and a measured process variable.
+
+    The class provides functionality to initialize the PID parameters,
+    accommodate custom environment-specific configurations, and perform
+    control actions. This makes it suitable for closed-loop feedback systems
+    where precise control and adjustments are required.
+
+    Attributes:
+        Kp (float): Proportional gain, influences the magnitude of the control
+            action proportional to the error.
+        Ki (float): Integral gain, accumulates past error to eliminate steady-state
+            error.
+        Kd (float): Derivative gain, reacts to the rate of change of the error.
+        dt (float): Time step or duration between control updates.
+        setpoint (float): Desired target value that the controller attempts to reach.
+        integral (float): Accumulator for the integral term.
+        prev_error (float): Error value from the previous control step, used for
+            derivative computation.
     """
 
     def __init__(self, args_cli=None):
@@ -302,7 +356,7 @@ class ControllerPID(ControllerBase):
         self.setpoint = np.pi / 2  # Desired target value
         return env, config
 
-    def run(self, env, alive_check, resume_path=None):
+    def run(self, env, alive_check, iterate, args=None, resume_path=None):
         """
         Execute the PID controller's control loop.
 
@@ -310,7 +364,7 @@ class ControllerPID(ControllerBase):
         :param dt: Timestep duration
         :param alive_check: Function to check whether the process should continue
         """
-        super().run(env, alive_check)
+        super().run(env, alive_check, iterate, args=args, resume_path=resume_path)
 
     def step(self, obs, args=None):
         # Get the current value
@@ -331,4 +385,4 @@ class ControllerPID(ControllerBase):
         # Update the previous error
         self.prev_error = error
 
-        return joint_efforts
+        return torch.tensor([[joint_efforts]])
