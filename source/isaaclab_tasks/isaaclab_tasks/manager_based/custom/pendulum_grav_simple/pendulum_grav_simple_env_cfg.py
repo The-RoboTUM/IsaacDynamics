@@ -186,6 +186,7 @@ class PendulumEnvCfg(ManagerBasedRLEnvCfg):
         self.episode_length_s = 5
         # viewer settings
         self.viewer.eye = (8.0, 0.0, 5.0)
+
         # simulation settings
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation

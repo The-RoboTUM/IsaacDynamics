@@ -9,13 +9,14 @@
 - Encapsulate most of the complexity of the environment in own class
 - Write a trainer backend for RL controllers
 - Write a graphing class
-- Write a visualization script
-- Set up a nice simple logging directory and setup interface in main script
 
 ## 🔄 In Progress
-- [X] Save the information per step into a pandas frame and maybe a database
 
 ## ✅ Completed
+- [x] Update the readme
+- [X] Write a visualization script
+- [X] Set up a nice simple logging directory and setup interface in main script
+- [X] Save the information per step into a pandas frame and maybe a database
 - [X] Make the dummy wrapper print all the info that you want to record
 - [X] Write a dummy wrapper around the controller class that is still recognized as a controller
 - [x] Unify the run script into one method
@@ -30,3 +31,4 @@
 - Figure out how to make the env look nice with nice cameras
 - Look into how to use your local version of skrl, since this one has the fix you made
 - Make the way that controllers are accessed the same way that envs are accessed
+- Add a bar showing the progress of episodes & duration ifo in terminal

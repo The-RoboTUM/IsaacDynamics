@@ -9,9 +9,10 @@ Script to launch an Isaac Sim environment and use variable controllers for Reinf
 
 """Launch Isaac Sim Simulator first."""
 
-import argparse
 import os
 import sys
+
+from isaaclab_dynamics.utils.io import setup_parser
 
 from isaaclab.app import AppLauncher
 
@@ -19,125 +20,12 @@ from isaaclab.app import AppLauncher
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
 
+# Handle user input
+parser = setup_parser()
 
-def setup_parser(applauncher):
-    """
-    Parse the command-line arguments.
-
-    Args:
-        applauncher: AppLauncher instance to add specific CLI arguments.
-
-    Returns:
-        tuple: Parsed CLI arguments (args_cli) and Hydra arguments (hydra_args).
-    """
-    parser = argparse.ArgumentParser(description="Run an RL agent with skrl.")
-
-    # Video-related arguments
-    parser.add_argument(
-        "--video",
-        action="store_true",
-        default=False,
-        help="Record videos during training.",
-    )
-    parser.add_argument(
-        "--video_length",
-        type=int,
-        default=200,
-        help="Length of recorded video (in steps).",
-    )
-    parser.add_argument(
-        "--video_interval",
-        type=int,
-        default=2000,
-        help="Interval between video recordings (in steps).",
-    )
-
-    # Environment-related arguments
-    parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
-    parser.add_argument("--task", type=str, default=None, help="Name of the task.")
-    parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment.")
-    parser.add_argument(
-        "--distributed",
-        action="store_true",
-        default=False,
-        help="Run training with multiple GPUs or nodes.",
-    )
-    parser.add_argument("--controller", type=str, default=None, help="Name of the controller.")
-
-    # Checkpoint-related arguments
-    parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint.")
-    parser.add_argument(
-        "--use_pretrained_checkpoint",
-        action="store_true",
-        help="Use the pretrained checkpoint from Nucleus.",
-    )
-
-    # Training-related arguments
-    parser.add_argument(
-        "--mode",
-        type=str,
-        default="test",
-        choices=["train", "test"],
-        help="Specify training or testing mode.",
-    )
-    parser.add_argument(
-        "--max_iterations",
-        type=int,
-        default=None,
-        help="Maximum RL policy training iterations.",
-    )
-    parser.add_argument(
-        "--ml_framework",
-        type=str,
-        default="torch",
-        choices=["torch", "jax", "jax-numpy"],
-        help="ML framework for training the skrl agent.",
-    )
-    parser.add_argument(
-        "--algorithm",
-        type=str,
-        default="PPO",
-        choices=["AMP", "PPO", "IPPO", "MAPPO"],
-        help="The RL algorithm used for training the skrl agent.",
-    )
-
-    # Experiment-specific arguments
-    parser.add_argument(
-        "--experiment_name",
-        type=str,
-        default="",
-        help="Name of the experiment for logging purposes.",
-    )
-    parser.add_argument(
-        "--record",
-        action="store_true",
-        default=False,
-        help="Record observations and actions.",
-    )
-
-    # Debugging and runtime arguments
-    parser.add_argument("--debugger", action="store_true", default=False, help="Enable debugging mode.")
-    parser.add_argument(
-        "--disable_fabric",
-        action="store_true",
-        default=False,
-        help="Disable fabric operations (use USD I/O).",
-    )
-    parser.add_argument(
-        "--real-time",
-        action="store_true",
-        default=False,
-        help="Run in real-time mode if supported.",
-    )
-
-    # AppLauncher-specific arguments
-    applauncher.add_app_launcher_args(parser)
-    args_cli, hydra_args = parser.parse_known_args()
-
-    return args_cli, hydra_args
-
-
-args_cli, hydra_args = setup_parser(AppLauncher)
+# AppLauncher-specific arguments
+AppLauncher.add_app_launcher_args(parser)
+args_cli, hydra_args = parser.parse_known_args()
 
 # Clear Hydra-specific arguments from sys.argv
 sys.argv = [sys.argv[0]] + hydra_args
@@ -168,7 +56,7 @@ import gymnasium as gym
 import random
 
 from isaaclab_dynamics.controllers import base_controllers, wrappers
-from isaaclab_dynamics.utilities import configure_logging, save_configuration
+from isaaclab_dynamics.utils.env_utils import configure_logging, save_configuration
 
 # from isaaclab.envs import (
 #     DirectMARLEnv,
@@ -219,6 +107,7 @@ def setup_env(env_cfg):
     """
     env_cfg.scene.num_envs = args_cli.num_envs or env_cfg.scene.num_envs
     env_cfg.sim.device = args_cli.device or env_cfg.sim.device
+    env_cfg.episode_length_s = args_cli.duration
 
     if args_cli.distributed:
         env_cfg.sim.device = f"cuda:{app_launcher.local_rank}"
@@ -265,8 +154,6 @@ def main(env_cfg, agent_cfg):
         controller = base_controllers.ControllerPID(args_cli=args_cli)
     else:
         raise ValueError("Invalid controller specified.")
-    if args_cli.record:
-        controller = wrappers.ControllerLogger(controller, args_cli=args_cli)
 
     # Wrap and configure environment
     env, _ = controller.setup(env, dt, agent_cfg, seed=seed)
@@ -274,6 +161,10 @@ def main(env_cfg, agent_cfg):
     # Logging and video recording setup
     log_dir, resume_path = configure_logging(args_cli, agent_cfg)
     env = record_env(env, log_dir)
+
+    if args_cli.record:
+        controller = wrappers.ControllerLogger(controller, log_dir, args_cli=args_cli)
+        print("Added a Logger to the controller. The observations and actions will be recorded.")
 
     # Save configurations
     save_configuration(args_cli, log_dir, env_cfg, agent_cfg)

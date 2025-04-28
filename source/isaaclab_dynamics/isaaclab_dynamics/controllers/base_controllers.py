@@ -51,17 +51,26 @@ class ControllerBase(ABC):
         # Store command line arguments, if provided
         self.args_cli = args_cli or {}
         self.is_initialized = False
+        self.step_runtime = 0
         self.dt = 0
 
     def setup(self, env, dt, config=None, seed=None):
         self.is_initialized = True
         self.dt = dt
 
-    def run(self, env, alive_check, iterate, args=None, resume_path=None):
+    def reset(self, env):
         obs, _ = env.reset()
+        return obs
+
+    def run(self, env, alive_check, iterate, args=None, resume_path=None):
+        # Set up the simulation
+        obs = self.reset(env)
         timestep = 0
 
         # Main simulation loop
+        self.loop(env, alive_check, iterate, obs, timestep, args=args, resume_path=resume_path)
+
+    def loop(self, env, alive_check, iterate, obs, timestep, args=None, resume_path=None):
         while alive_check():
             start_time = time.time()
             with torch.inference_mode():
@@ -80,6 +89,10 @@ class ControllerBase(ABC):
             if self.args_cli.real_time and sleep_time > 0:
                 time.sleep(sleep_time)
 
+            # Handle experiment termination
+            if self.step_runtime >= self.args_cli.max_runtime_iterations:
+                break
+
     @abstractmethod
     def step(self, obs, args=None):
         pass
@@ -87,6 +100,7 @@ class ControllerBase(ABC):
     def iterate(self, env, obs, args=None):
         actions = self.step(obs, args=args)
         obs, reward, terminated, truncated, info = env.step(actions)
+        self.step_runtime += 1
         return actions, obs, reward, terminated, truncated, info
 
 
@@ -222,7 +236,7 @@ class ControllerRL(ControllerBase):
         runner = args.get("runner")
         env = args.get("env")
 
-        outputs = runner.agent.act(obs, timestep=0, timesteps=0)
+        outputs = runner.agent.act(obs, timestep=0, timesteps=0)  # look into why this has timestep=0
         if hasattr(env, "possible_agents"):
             actions = {a: outputs[-1][a].get("mean_actions", outputs[0][a]) for a in env.possible_agents}
         else:

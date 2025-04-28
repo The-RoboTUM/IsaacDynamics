@@ -3,6 +3,10 @@
 # 28.04.25
 - Today I am finishing the data gathering mechanisms and the probability modeling classes to calculate the metric
 - Will be closing this branch in the meantime
+- Today I finally finished the data recording wrapper for controllers, still has some minor TODOs should be usable
+  for arbitrary controllers
+- Created a basic visualization for observations and actions and tested that saving and loading database recordings
+  work like a charm
 
 # 23.04.25
 - Today I need to finish something I could demo for the progress of my thesis
