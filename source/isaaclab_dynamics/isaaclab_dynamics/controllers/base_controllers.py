@@ -52,6 +52,7 @@ class ControllerBase(ABC):
         self.args_cli = args_cli or {}
         self.is_initialized = False
         self.step_runtime = 0
+        self.episode_count = 0
         self.dt = 0
 
     def setup(self, env, dt, config=None, seed=None):
@@ -76,7 +77,7 @@ class ControllerBase(ABC):
             with torch.inference_mode():
 
                 # Take a step in the environment with the computed action
-                actions, obs, _, _, _, _ = iterate(env, obs, args=args)
+                actions, obs, _, _, truncated, _ = iterate(env, obs, args=args)
 
             # Handle video-related settings
             if self.args_cli.video:
@@ -89,8 +90,12 @@ class ControllerBase(ABC):
             if self.args_cli.real_time and sleep_time > 0:
                 time.sleep(sleep_time)
 
+            # Count episode terminations
+            if truncated:
+                self.episode_count += 1
+
             # Handle experiment termination
-            if self.step_runtime >= self.args_cli.max_runtime_iterations:
+            if self.episode_count >= self.args_cli.max_episodes:
                 break
 
     @abstractmethod
@@ -400,3 +405,49 @@ class ControllerPID(ControllerBase):
         self.prev_error = error
 
         return torch.tensor([[joint_efforts]])
+
+
+class ControllerRandom(ControllerBase):
+    """
+    ControllerRandom generates random efforts for each step. Useful for testing
+    or exploratory purposes in simulation environments.
+
+    Attributes:
+        effort_range (tuple): A tuple defining the (min, max) range for random efforts.
+    """
+
+    def __init__(self, args_cli=None):
+        """
+        Initializes the random controller.
+
+        :param args_cli: Command line arguments or configuration dictionary.
+        """
+        super().__init__(args_cli)
+        self.effort_range = (-5.0, 5.0)  # Default random effort range
+
+    def setup(self, env, dt, config=None, seed=None):
+        """
+        Configure the random controller with optional environment, timestep, and seed.
+
+        :param env: Environment instance.
+        :param dt: Time step duration.
+        :param config: Configuration dictionary.
+        :param seed: Optional random seed.
+        """
+        super().setup(env, dt, config, seed)
+        if config and "effort_range" in config:
+            self.effort_range = config["effort_range"]
+        if seed is not None:
+            np.random.seed(seed)
+        return env, config
+
+    def step(self, obs, args=None):
+        """
+        Generate random efforts as actions.
+
+        :param obs: Observations from the environment (not used here).
+        :param args: Optional arguments.
+        :return: A tensor with random efforts.
+        """
+        random_effort = np.random.uniform(self.effort_range[0], self.effort_range[1])
+        return torch.tensor([[random_effort]])

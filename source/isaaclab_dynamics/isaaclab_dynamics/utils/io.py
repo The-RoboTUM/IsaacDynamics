@@ -4,6 +4,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import argparse
+import json
+import os
+import sqlite3
+
+import pandas as pd
 
 
 def setup_parser():
@@ -97,10 +102,10 @@ def setup_parser():
         help="Record observations and actions.",
     )
     parser.add_argument(
-        "--max_runtime_iterations",
+        "--max_episodes",
         type=int,
-        default=10000,
-        help="Maximum number of iterations for the runtime (for all episodes).",
+        default=10,
+        help="Maximum number of episodes to run.",
     )
 
     # Debugging and runtime arguments
@@ -119,3 +124,65 @@ def setup_parser():
     )
 
     return parser
+
+
+def episode_counts(df):
+    steps = df["step"].values
+    total_steps = len(steps)
+
+    episode_len = 0
+    for i in range(1, len(steps)):
+        if steps[i] <= steps[i - 1]:
+            episode_len = i
+            break
+    if episode_len == 0:
+        episode_len = total_steps
+
+    last_episode_len = total_steps % episode_len
+    num_complete_episodes = total_steps // episode_len
+
+    return num_complete_episodes, episode_len, last_episode_len
+
+
+def format_subset(df, ids: tuple[int, int]):
+    # Filter by id
+    df_sub = df[(df["id"] >= ids[0]) & (df["id"] < ids[1])].copy()
+    df_sub.reset_index(drop=True, inplace=True)
+
+    # Decode obs and actions if they are strings
+    if isinstance(df_sub["obs"].iloc[0], str):
+        df_sub["obs"] = df_sub["obs"].apply(json.loads)
+    if isinstance(df_sub["actions"].iloc[0], str):
+        df_sub["actions"] = df_sub["actions"].apply(json.loads)
+
+    # Count the state and action space
+    state_dim = len(df_sub["obs"].iloc[0])
+    action_dim = len(df_sub["actions"].iloc[0])
+
+    # Expand obs into separate columns
+    obs_expanded = pd.DataFrame(df_sub["obs"].tolist(), columns=[f"obs_{i}" for i in range(state_dim)])
+    df_sub = pd.concat([df_sub.drop(columns=["obs"]), obs_expanded], axis=1)
+
+    # Expand actions into separate columns (if needed)
+    actions_expanded = pd.DataFrame(df_sub["actions"].tolist(), columns=[f"action_{i}" for i in range(action_dim)])
+    df_sub = pd.concat([df_sub.drop(columns=["actions"]), actions_expanded], axis=1)
+
+    return df_sub, state_dim, action_dim
+
+
+def load_database(log_dir):
+    # Loading the exact database directory
+    db_folder = os.path.join(log_dir, "data_logs")
+    db_files = sorted([f for f in os.listdir(db_folder) if f.endswith(".db")])
+    if not db_files:
+        raise FileNotFoundError(f"No database files found in {db_folder}")
+    db_path = os.path.join(db_folder, db_files[-1])  # Take the most recent
+
+    # Connect and load DataFrame
+    conn = sqlite3.connect(db_path)
+    try:
+        df = pd.read_sql_query("SELECT * FROM logs", conn)
+    finally:
+        conn.close()
+
+    return df

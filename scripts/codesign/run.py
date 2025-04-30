@@ -152,6 +152,8 @@ def main(env_cfg, agent_cfg):
         controller = base_controllers.ControllerKeyboard(args_cli=args_cli)
     elif args_cli.controller == "pid":
         controller = base_controllers.ControllerPID(args_cli=args_cli)
+    elif args_cli.controller == "random":
+        controller = base_controllers.ControllerRandom(args_cli=args_cli)
     else:
         raise ValueError("Invalid controller specified.")
 

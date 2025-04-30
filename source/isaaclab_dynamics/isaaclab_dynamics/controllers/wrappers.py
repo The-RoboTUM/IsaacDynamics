@@ -26,6 +26,7 @@ class ControllerLogger(ControllerBase):
             "step": [],
             "obs": [],
             "actions": [],
+            "truncated": [],
         }
         self.log_dir = log_dir
         self.saved_logs = False
@@ -50,10 +51,12 @@ class ControllerLogger(ControllerBase):
         obs = self.controller.reset(env)
 
         # saving data into internal log
-        self.log["id"].append(0)
-        self.log["step"].append(0)
-        self.log["obs"].append(str(self.ground(obs["policy"])))
-        self.log["actions"].append(str([0]))  # TODO: Modify to handle variable dimensional action spaces
+        if self.episode_count < self.args_cli.max_episodes:
+            self.log["id"].append(0)
+            self.log["step"].append(0)
+            self.log["obs"].append(str(self.ground(obs["policy"])))
+            self.log["actions"].append(str([0]))  # TODO: Modify to handle variable dimensional action spaces
+            self.log["truncated"].append(str([True]))
 
         return obs
 
@@ -61,10 +64,12 @@ class ControllerLogger(ControllerBase):
         actions, obs, rewards, terminated, truncated, info = self.controller.iterate(env, obs, args=args)
 
         # saving data into internal log
-        self.log["id"].append(self.controller.step_runtime)
-        self.log["step"].append(self.ground(env.unwrapped.episode_length_buf)[0])
-        self.log["obs"].append(str(self.ground(obs["policy"])))
-        self.log["actions"].append(str(self.ground(actions)))
+        if self.episode_count < self.args_cli.max_episodes:
+            self.log["id"].append(self.controller.step_runtime)
+            self.log["step"].append(self.ground(env.unwrapped.episode_length_buf)[0])
+            self.log["obs"].append(str(self.ground(obs["policy"])))
+            self.log["actions"].append(str(self.ground(actions)))
+            self.log["truncated"].append(str(self.ground(truncated)))
 
         return actions, obs, rewards, terminated, truncated, info
 
@@ -97,6 +102,7 @@ class ControllerLogger(ControllerBase):
             conn = sqlite3.connect(db_path)
             try:
                 df = pd.DataFrame(self.log)
+                df = df.iloc[:-1]  # drop the last element since it is the start of the next episode
                 df.to_sql("logs", conn, if_exists="replace", index=False)
             finally:
                 conn.close()

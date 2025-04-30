@@ -1,18 +1,13 @@
 # TODO List
 
 ## 📌 High-Priority Tasks
-- Create a managed env for
-  - Double pendulum
-  - Acrobot
-  - Slip walker
-  - Articulated walker
-- Encapsulate most of the complexity of the environment in own class
-- Write a trainer backend for RL controllers
-- Write a graphing class
+-
 
 ## 🔄 In Progress
+- n
 
 ## ✅ Completed
+- [X] Wrote a minimal calculation of the control effort
 - [x] Update the readme
 - [X] Write a visualization script
 - [X] Set up a nice simple logging directory and setup interface in main script
@@ -28,7 +23,15 @@
 - [x] Write a run script that can handle play/train matters
 
 ## 💡 Future Ideas
+- Write a graphing class
+- Write a trainer backend for RL controllers
+- Encapsulate most of the complexity of the environment in own class
 - Figure out how to make the env look nice with nice cameras
 - Look into how to use your local version of skrl, since this one has the fix you made
 - Make the way that controllers are accessed the same way that envs are accessed
 - Add a bar showing the progress of episodes & duration ifo in terminal
+- Create a managed env for
+  - Double pendulum
+  - Acrobot
+  - Slip walker
+  - Articulated walker

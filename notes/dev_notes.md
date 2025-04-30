@@ -1,5 +1,14 @@
 # Dev Notes
 
+# 30.04.25
+- Today I have been performing experiments of the control effort metric on the pendulum
+- I got this for a random controller
+  - INFO: Control effort: 0.93 +- 0.58 Bits (per episode)
+  - INFO: Control effort per second: 0.37 +- 0.23 Bits/s
+- I got this for a PID controller
+  - INFO: Control effort: 53.08 +- 16.88 Bits (per episode)
+  - INFO: Control effort per second: 21.23 +- 6.75 Bits/s
+
 # 28.04.25
 - Today I am finishing the data gathering mechanisms and the probability modeling classes to calculate the metric
 - Will be closing this branch in the meantime
