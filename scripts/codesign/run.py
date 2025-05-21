@@ -172,7 +172,12 @@ def main(env_cfg, agent_cfg):
     save_configuration(args_cli, log_dir, env_cfg, agent_cfg)
 
     # Run the environment with the controller
-    controller.run(env, simulation_app.is_running, controller.iterate, resume_path=resume_path)
+    controller.run(
+        env,
+        simulation_app.is_running,
+        controller.iterate,
+        resume_path=resume_path,
+    )
     env.close()
 
 

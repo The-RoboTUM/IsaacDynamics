@@ -30,6 +30,7 @@
 - Look into how to use your local version of skrl, since this one has the fix you made
 - Make the way that controllers are accessed the same way that envs are accessed
 - Add a bar showing the progress of episodes & duration ifo in terminal
+- Sepparate the controllers from the simulation loop
 - Create a managed env for
   - Double pendulum
   - Acrobot

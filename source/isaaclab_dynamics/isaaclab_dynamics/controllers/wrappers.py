@@ -4,12 +4,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import atexit
 import datetime
+import numpy as np
 import os
 import sqlite3
 import torch
 
+import jax
 import pandas as pd
 from isaaclab_dynamics.controllers.base_controllers import ControllerBase
+from skrl.envs.wrappers.jax.isaaclab_envs import IsaacLabWrapper
 
 
 class ControllerLogger(ControllerBase):
@@ -38,11 +41,11 @@ class ControllerLogger(ControllerBase):
 
     def run(self, env, alive_check, iterate, args=None, resume_path=None):
         # Set up the simulation
-        obs = self.reset(env)
-        timestep = 0
+        # obs = self.reset(env)
+        # timestep = 0
 
         # Run the simulation
-        self.controller.loop(env, alive_check, iterate, obs, timestep, args=args, resume_path=resume_path)
+        self.controller.run(env, alive_check, iterate, args=args, resume_path=resume_path)
 
         # Save the logs when done
         self.save_log()
@@ -54,7 +57,10 @@ class ControllerLogger(ControllerBase):
         if self.episode_count < self.args_cli.max_episodes:
             self.log["id"].append(0)
             self.log["step"].append(0)
-            self.log["obs"].append(str(self.ground(obs["policy"])))
+            if isinstance(env, IsaacLabWrapper):
+                self.log["obs"].append(str(self.ground(obs)))
+            else:
+                self.log["obs"].append(str(self.ground(obs["policy"])))
             self.log["actions"].append(str([0]))  # TODO: Modify to handle variable dimensional action spaces
             self.log["truncated"].append(str([True]))
 
@@ -67,7 +73,10 @@ class ControllerLogger(ControllerBase):
         if self.episode_count < self.args_cli.max_episodes:
             self.log["id"].append(self.controller.step_runtime)
             self.log["step"].append(self.ground(env.unwrapped.episode_length_buf)[0])
-            self.log["obs"].append(str(self.ground(obs["policy"])))
+            if isinstance(env, IsaacLabWrapper):
+                self.log["obs"].append(str(self.ground(obs)))
+            else:
+                self.log["obs"].append(str(self.ground(obs["policy"])))
             self.log["actions"].append(str(self.ground(actions)))
             self.log["truncated"].append(str(self.ground(truncated)))
 
@@ -79,6 +88,8 @@ class ControllerLogger(ControllerBase):
             return {k: v.detach().cpu().numpy().flatten().tolist() for k, v in tensor.items()}
         elif isinstance(tensor, torch.Tensor):
             return tensor.detach().cpu().numpy().flatten().tolist()
+        elif isinstance(tensor, jax.Array):
+            return np.array(tensor).flatten().tolist()
         else:
             raise TypeError(f"Unsupported type for ground(): {type(tensor)}")
 

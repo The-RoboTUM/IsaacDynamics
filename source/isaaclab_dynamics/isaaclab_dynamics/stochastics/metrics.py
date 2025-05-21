@@ -6,23 +6,33 @@
 import numpy as np
 
 
-def control_effort(kde_model, obs_values, delta_t, x_min, x_max):
-    # Uniform density
-    uniform_density = 1.0 / (x_max - x_min)
+def delta_entropy(kde_model_obs, kde_model_actions, x_min, x_max, u_min, u_max, num_points=1000):
+    # Evaluation grid obs
+    y_grid = np.linspace(x_min, x_max, num_points)
+    dy = (x_max - x_min) / num_points
 
-    # Evaluate KDE at each value
-    p_values = kde_model.evaluate(obs_values)
+    # Evaluation grid actions
+    u_grid = np.linspace(u_min, u_max, num_points)
+    du = (u_max - u_min) / num_points
 
-    # Numerical stability
-    p_values = np.clip(p_values, 1e-12, None)
+    # Evaluate KDE at grid points
+    p_y = kde_model_obs.evaluate(y_grid)
+    p_y = np.clip(p_y, 1e-12, None)
+    p_u = kde_model_actions.evaluate(u_grid)
+    p_u = np.clip(p_u, 1e-12, None)
 
-    # KL terms at each step
-    kl_terms = np.log2(p_values / uniform_density)
+    # Uniform prior density
+    uniform_density_obs = 1.0 / (x_max - x_min)
+    uniform_density_actions = 1.0 / (u_max - u_min)
 
-    # Sum over all steps and multiply by delta_time
-    cont_effort = -(np.sum(p_values * kl_terms) * delta_t)
+    # Compute pointwise KL terms
+    kl_terms_obs = p_y * np.log2(p_y / uniform_density_obs)
+    kl_terms_actions = p_u * np.log2(p_u / uniform_density_actions)
 
-    # TODO: Change the sign to symbolize the change of entropy
-    cont_effort *= -1
+    # Approximate the integral with the trapezoidal rule
+    kl_div_obs = np.sum(kl_terms_obs) * dy
+    kl_div_actions = np.sum(kl_terms_actions) * du
 
-    return cont_effort
+    # Control effort is negative KL divergence
+    delta_H = -kl_div_obs - kl_div_actions
+    return delta_H, -kl_div_obs, -kl_div_actions
