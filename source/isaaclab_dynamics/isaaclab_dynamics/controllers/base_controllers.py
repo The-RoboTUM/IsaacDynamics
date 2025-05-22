@@ -110,6 +110,111 @@ class ControllerBase(ABC):
 
 
 # Controller class for RL-based algorithms
+class ControllerCompound(ControllerBase):
+
+    def __init__(self, args_cli=None):
+        super().__init__(args_cli)
+        # Store algorithm name and initialize agent configuration
+        self.algorithm = args_cli.algorithm.lower()
+        self.agent_cfg = None
+
+        self.Kp = None  # Proportional gain
+        self.Ki = None  # Integral gain
+        self.Kd = None  # Derivative gain
+        self.dt = 0
+
+        self.setpoint = None  # Desired target value
+        self.integral = 0.0  # Integral term accumulator
+        self.prev_error = None  # Previous error term for derivative calculation
+
+    def setup(self, env, dt, config=None, seed=None):
+        super().setup(env, dt, config, seed)
+
+        self.Kp = 5.0  # Proportional gain
+        self.Ki = 0.0  # Integral gain
+        self.Kd = 0.0  # Derivative gain
+        self.setpoint = np.pi / 2  # Desired target value
+
+        self.agent_cfg = config
+
+        # Configure ML framework (e.g., JAX or NumPy backend for jax framework)
+        if self.args_cli.ml_framework.startswith("jax"):
+            skrl.config.jax.backend = "jax" if self.args_cli.ml_framework == "jax" else "numpy"
+
+        # Adjust agent configuration depending on mode (train/test)
+        if self.args_cli.mode == "train":
+            # Configure training-specific parameters
+            if self.args_cli.max_iterations:
+                self.agent_cfg["trainer"]["timesteps"] = self.args_cli.max_iterations * config["agent"]["rollouts"]
+            self.agent_cfg["trainer"]["close_environment_at_exit"] = False
+            self.agent_cfg["seed"] = seed if seed is not None else config["seed"]
+        elif self.args_cli.mode == "test":
+            # Configure testing-specific parameters
+            config["trainer"]["close_environment_at_exit"] = False
+            config["agent"]["experiment"]["write_interval"] = 0
+            config["agent"]["experiment"]["checkpoint_interval"] = 0
+
+        # Wrap environment based on its type and algorithm
+        if isinstance(env.unwrapped, DirectMARLEnv) and self.algorithm in ["ppo"]:
+            env = multi_agent_to_single_agent(env)
+        env = SkrlVecEnvWrapper(env, ml_framework=self.args_cli.ml_framework)
+        return env, self.agent_cfg
+
+    def run(self, env, alive_check, iterate, args=None, resume_path=None):
+        # Import the appropriate Runner class dynamically
+        Runner = None
+        if self.args_cli.ml_framework.startswith("torch"):
+            from skrl.utils.runner.torch import Runner
+        elif self.args_cli.ml_framework.startswith("jax"):
+            from skrl.utils.runner.jax import Runner
+
+        # Initialize the runner with the environment and agent configuration
+        runner = Runner(env, self.agent_cfg)
+
+        # Optionally load a pre-trained model checkpoint
+        if resume_path:
+            print(f"[INFO] Loading model checkpoint from: {resume_path}")
+            runner.agent.load(resume_path)
+
+        # Run the controller based on the mode (train or test)
+        if self.args_cli.mode == "train":
+            runner.run()
+        elif self.args_cli.mode == "test":
+            runner.agent.set_running_mode("eval")
+            super().run(env, alive_check, iterate, args={"runner": runner, "env": env})
+
+    def step(self, obs, args=None):
+        # Get the current value
+        current_value = obs["policy"][0, 0].item()
+
+        # Calculate the current error
+        error = self.setpoint - current_value
+
+        # Compute the integral term
+        self.integral += error * self.dt
+
+        # Compute the derivative term
+        derivative = (error - self.prev_error) / self.dt if self.prev_error is not None else 0.0
+
+        # Compute the control action
+        joint_efforts = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+
+        # Update the previous error
+        self.prev_error = error
+
+        runner = args.get("runner")
+        env = args.get("env")
+
+        outputs = runner.agent.act(obs, timestep=0, timesteps=0)  # look into why this has timestep=0
+        if hasattr(env, "possible_agents"):
+            actions = {a: outputs[-1][a].get("mean_actions", outputs[0][a]) for a in env.possible_agents}
+        else:
+            actions = outputs[-1].get("mean_actions", outputs[0])
+
+        return actions + torch.tensor([[joint_efforts]])
+
+
+# Controller class for RL-based algorithms
 class ControllerRL(ControllerBase):
     """
     A Reinforcement Learning (RL) Controller class that manages the setup, configuration,
@@ -205,8 +310,10 @@ class ControllerRL(ControllerBase):
         elif self.args_cli.ml_framework.startswith("jax"):
             from skrl.utils.runner.jax import Runner
 
+            # from isaaclab_dynamics.rl.skrl_clones import ExpandedRunner as Runner
+
         # Initialize the runner with the environment and agent configuration
-        runner = Runner(env, self.agent_cfg)
+        runner = Runner(env, cfg=self.agent_cfg)
 
         # Optionally load a pre-trained model checkpoint
         if resume_path:

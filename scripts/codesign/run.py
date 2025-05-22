@@ -130,7 +130,13 @@ def setup_env(env_cfg):
 
 # Algorithm configuration
 algorithm = args_cli.algorithm.lower()
-agent_cfg_entry_point = "skrl_cfg_entry_point" if algorithm == "ppo" else f"skrl_{algorithm}_cfg_entry_point"
+agent_cfg_entry_point = None
+if algorithm == "ppo":
+    agent_cfg_entry_point = "skrl_cfg_entry_point"
+elif algorithm == "pid":
+    agent_cfg_entry_point = "pid_cfg_entry_point"
+else:
+    agent_cfg_entry_point = f"skrl_{algorithm}_cfg_entry_point"
 
 
 @hydra_task_config(args_cli.task, agent_cfg_entry_point)
@@ -143,6 +149,7 @@ def main(env_cfg, agent_cfg):
         agent_cfg: Configuration for the RL agent.
     """
     # Initialize environment
+    env_cfg.stiffness_enable = args_cli.spring
     env_cfg, env, seed, dt = setup_env(env_cfg)
 
     # Controller setup
@@ -154,6 +161,10 @@ def main(env_cfg, agent_cfg):
         controller = base_controllers.ControllerPID(args_cli=args_cli)
     elif args_cli.controller == "random":
         controller = base_controllers.ControllerRandom(args_cli=args_cli)
+    elif args_cli.controller == "compound":
+        controller = base_controllers.ControllerCompound(args_cli=args_cli)
+    elif args_cli.controller == "pid_rl":
+        controller = base_controllers.ControllerRL(args_cli=args_cli)
     else:
         raise ValueError("Invalid controller specified.")
 

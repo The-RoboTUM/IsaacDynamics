@@ -16,11 +16,11 @@ from . import agents
 ##
 
 gym.register(
-    id="Isaac-Pendulum-v0",
+    id="Isaac-Pendulum-Simple-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.pendulum_grav_simple_env_cfg:PendulumEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.pendulum_grav_simple_env_cfg:PendulumSimpleEnvCfg",
         "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
     },

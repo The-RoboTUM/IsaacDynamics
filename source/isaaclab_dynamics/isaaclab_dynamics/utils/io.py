@@ -49,6 +49,12 @@ def setup_parser():
         help="Run training with multiple GPUs or nodes.",
     )
     parser.add_argument("--controller", type=str, default=None, help="Name of the controller.")
+    parser.add_argument(
+        "--spring",
+        action="store_true",
+        default=False,
+        help="Enable a spring in the joints.",
+    )
 
     # Checkpoint-related arguments
     parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint.")
@@ -121,6 +127,14 @@ def setup_parser():
         action="store_true",
         default=False,
         help="Run in real-time mode if supported.",
+    )
+
+    # Logging related arguments
+    parser.add_argument(
+        "--show_plots",
+        action="store_true",
+        default=False,
+        help="Show the probability distribution plots.",
     )
 
     return parser

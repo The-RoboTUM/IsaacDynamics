@@ -46,6 +46,7 @@ if args_cli.debugger:
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 # Probability magic
 from scipy.stats import gaussian_kde
@@ -63,7 +64,14 @@ algorithm = args_cli.algorithm.lower()
 agent_cfg_entry_point = "skrl_cfg_entry_point" if algorithm == "ppo" else f"skrl_{algorithm}_cfg_entry_point"
 
 
-def plot_distribution(df_clean, dists, name: str = "obs_0"):
+def plot_distribution(
+    df_clean,
+    dists,
+    name: str = "obs_0",
+    save_dir: str = "./plots",
+    show: bool = False,
+    file_name="unknown",
+):
     sns.set_theme()
     values = df_clean[name].values
 
@@ -94,7 +102,16 @@ def plot_distribution(df_clean, dists, name: str = "obs_0"):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+
+    # Ensure save directory exists
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, f"{name}_distribution_{file_name}.png")
+    plt.savefig(save_path)
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 
 @hydra_task_config(args_cli.task, agent_cfg_entry_point)
@@ -143,7 +160,22 @@ def main(env_cfg, agent_cfg):
     print(f"Probability density at {value_to_query} for {obs_name}: {probability}")
 
     # Plot distributions
-    plot_distribution(df_clean, obs_dists, obs_name)
+    plot_distribution(
+        df_clean,
+        obs_dists,
+        obs_name,
+        show=args_cli.show_plots,
+        save_dir=log_dir + "/plots",
+        file_name=args_cli.experiment_name,
+    )
+    plot_distribution(
+        df_clean,
+        actions_dists,
+        action_name,
+        show=args_cli.show_plots,
+        save_dir=log_dir + "/plots",
+        file_name=args_cli.experiment_name,
+    )
     plot_distribution(df_clean, actions_dists, action_name)
 
     # Calculate the control effort metric per episode

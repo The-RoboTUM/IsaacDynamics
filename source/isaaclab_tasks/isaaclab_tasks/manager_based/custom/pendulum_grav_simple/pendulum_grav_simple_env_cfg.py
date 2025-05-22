@@ -30,7 +30,7 @@ sys.path.append("/home/andrew/Documents/IsaacLab")
 ##
 # from isaaclab_assets.robots.cartpole import CARTPOLE_CFG  # isort:skip
 # from experiments.robots.pendulum_grav_simple import PENDULUM_CFG
-from isaaclab_assets.custom.pendulum_grav_simple import PENDULUM_CFG
+from isaaclab_assets.custom.pendulum_grav_simple import PENDULUM_GRAV_CFG
 
 ##
 # Scene definition
@@ -38,8 +38,7 @@ from isaaclab_assets.custom.pendulum_grav_simple import PENDULUM_CFG
 
 
 @configclass
-class PendulumSceneCfg(InteractiveSceneCfg):
-    """Configuration for a cart-pole scene."""
+class PendulumSimpleManagedSceneCfg(InteractiveSceneCfg):
 
     # # ground plane
     # ground = AssetBaseCfg(
@@ -48,7 +47,7 @@ class PendulumSceneCfg(InteractiveSceneCfg):
     # )
 
     # Pendulum
-    robot: ArticulationCfg = PENDULUM_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    robot: ArticulationCfg = PENDULUM_GRAV_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
     # lights
     dome_light = AssetBaseCfg(
@@ -165,11 +164,11 @@ class TerminationsCfg:
 
 
 @configclass
-class PendulumEnvCfg(ManagerBasedRLEnvCfg):
+class PendulumSimpleManagedEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the cartpole environment."""
 
     # Scene settings
-    scene: PendulumSceneCfg = PendulumSceneCfg(num_envs=4096, env_spacing=4.0)
+    scene: PendulumSimpleManagedSceneCfg = PendulumSimpleManagedSceneCfg(num_envs=4096, env_spacing=4.0)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()

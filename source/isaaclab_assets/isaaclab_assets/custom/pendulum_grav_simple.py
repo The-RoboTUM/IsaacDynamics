@@ -20,7 +20,7 @@ from isaaclab.assets import ArticulationCfg
 # Configuration
 ##
 
-PENDULUM_CFG = ArticulationCfg(
+PENDULUM_GRAV_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
         usd_path="source/isaaclab_assets/isaaclab_assets/custom/pendulum_grav_simple/pendulum_grav_simple.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(

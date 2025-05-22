@@ -1,28 +1,16 @@
 # TODO List
 
-## 📌 High-Priority Tasks
+## 📌 Up-next Tasks
 -
 
 ## 🔄 In Progress
-- n
+- Fully separate the simulation and control algos
 
 ## ✅ Completed
-- [X] Wrote a minimal calculation of the control effort
-- [x] Update the readme
-- [X] Write a visualization script
-- [X] Set up a nice simple logging directory and setup interface in main script
-- [X] Save the information per step into a pandas frame and maybe a database
-- [X] Make the dummy wrapper print all the info that you want to record
-- [X] Write a dummy wrapper around the controller class that is still recognized as a controller
-- [x] Unify the run script into one method
-- [X] Write a PID controller for the pendulum
-- [x] Write a section of the run script handling variable models and controllers etc.
-- [x] Document the issue with jax and memory allocation & write an issue in isaac sim
-- [x] Document how to use the debugger
-- [x] Read the notes from the previous meeting with Daniel, decide on tasks and add them here (Then proceed)
-- [x] Write a run script that can handle play/train matters
+- tbd
 
 ## 💡 Future Ideas
+- Write a loading management class and make saving based on algorithm
 - Write a graphing class
 - Write a trainer backend for RL controllers
 - Encapsulate most of the complexity of the environment in own class
