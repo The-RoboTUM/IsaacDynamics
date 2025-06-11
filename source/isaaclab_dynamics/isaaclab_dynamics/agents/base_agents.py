@@ -4,10 +4,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gymnasium
+import numpy as np
+from collections.abc import Mapping
 from typing import Any
 
+import jax
 import jax.numpy as jnp
-import jaxlib
 from skrl.agents.jax import Agent
 from skrl.memories.jax import Memory
 from skrl.models.jax import Model
@@ -28,14 +30,14 @@ CONTROLLER_DEFAULT_CONFIG = {
 }
 
 
-class ControlAgent(Agent):
+class BasicAgent(Agent):
     def __init__(
         self,
-        models: dict[str, Model],
+        models: Mapping[str, Model],
         memory: Memory | tuple[Memory] | None = None,
         observation_space: int | tuple[int] | gymnasium.Space | None = None,
         action_space: int | tuple[int] | gymnasium.Space | None = None,
-        device: str | jaxlib.xla_extension.Device | None = None,
+        device: str | jax.Device | None = None,
         cfg: dict | None = None,
     ) -> None:
         """Custom agent
@@ -190,17 +192,18 @@ class ControlAgent(Agent):
     #     # ===================================================
 
 
-class PIDAgent(ControlAgent):
+class PIDAgent(BasicAgent):
     def __init__(
         self,
-        models: dict[str, Model],
+        models: Mapping[str, Model],
+        memory: Memory | tuple[Memory] | None = None,
         observation_space: int | tuple[int] | gymnasium.Space | None = None,
         action_space: int | tuple[int] | gymnasium.Space | None = None,
-        device: str | jaxlib.xla_extension.Device | None = None,
+        device: str | jax.Device | None = None,
         cfg: dict | None = None,
         kp: float = 1.0,
-        ki: float = 0.5,
-        kd: float = 0.01,
+        ki: float = 0.01,
+        kd: float = 0.5,
     ) -> None:
         """
         PID-based Agent
@@ -222,12 +225,20 @@ class PIDAgent(ControlAgent):
         :param kd: Derivative gain
         :type kd: float
         """
-        super().__init__(models, None, observation_space, action_space, device, cfg)
+        super().__init__(
+            models=models,
+            memory=memory,
+            observation_space=observation_space,
+            action_space=action_space,
+            device=device,
+            cfg=cfg,
+        )
         self.kp = kp
         self.ki = ki
         self.kd = kd
         self.previous_error = 0.0
         self.integral = 0.0
+        self.dt = cfg.get("dt", 1 / 120)
 
     def act(self, states: jnp.ndarray, timestep: int, timesteps: int) -> jnp.ndarray:
         """
@@ -244,11 +255,41 @@ class PIDAgent(ControlAgent):
         :rtype: jnp.ndarray
         """
         setpoint = jnp.pi / 2  # Desired target value
-        error = setpoint - states[0]  # Assuming 1D input state
-        self.integral += error
-        derivative = error - self.previous_error
+        error = setpoint - jnp.array(states).ravel()[0]  # Assuming 1D input state
+        self.integral += error * self.dt
+        derivative = (error - self.previous_error) / self.dt if self.previous_error is not None else 0.0
 
         action = self.kp * error + self.ki * self.integral + self.kd * derivative
         self.previous_error = error
 
         return jnp.array([action])
+
+
+class RandomAgent(BasicAgent):
+    def __init__(
+        self,
+        models: Mapping[str, Model],
+        memory: Memory | tuple[Memory] | None = None,
+        observation_space: int | tuple[int] | gymnasium.Space | None = None,
+        action_space: int | tuple[int] | gymnasium.Space | None = None,
+        device: str | jax.Device | None = None,
+        cfg: dict | None = None,
+    ) -> None:
+        super().__init__(
+            models=models,
+            memory=memory,
+            observation_space=observation_space,
+            action_space=action_space,
+            device=device,
+            cfg=cfg,
+        )
+        print(f"Range{cfg.get('range')}")
+        self.effort_range = (
+            -cfg.get("range", 5.0),
+            cfg.get("range", 5.0),
+        )  # Default random effort range
+        self.dt = cfg.get("dt", 1 / 120)
+
+    def act(self, states: jnp.ndarray, timestep: int, timesteps: int) -> jnp.ndarray:
+        random_effort = np.random.uniform(self.effort_range[0], self.effort_range[1])
+        return jnp.array([random_effort])

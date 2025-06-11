@@ -33,11 +33,12 @@ class PendulumSimpleDirectEnvCfg(DirectRLEnvCfg):
     observation_space = 2
     state_space = 0
 
-    # simulation
+    # sim
     sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
 
     # robot
     stiffness_enable = False
+    setpoint = math.pi / 2
     robot_cfg: ArticulationCfg = PENDULUM_GRAV_CFG.replace(prim_path="/World/envs/env_.*/Robot")
     # cart_dof_name = "slider_to_cart"
     pendulum_dof_name = "base_to_pendulum"
@@ -76,6 +77,7 @@ class PendulumSimpleDirectEnv(DirectRLEnv):
         # spring
         self.stiffness = 50
         self.spring_enable = cfg.stiffness_enable
+        self.setpoint = cfg.setpoint
 
     def _setup_scene(self):
         self.pendulum = Articulation(self.cfg.robot_cfg)
@@ -94,7 +96,7 @@ class PendulumSimpleDirectEnv(DirectRLEnv):
 
     def _apply_action(self) -> None:
         angle = self.joint_pos[:, self._pendulum_dof_idx[0]].unsqueeze(dim=1)
-        error = math.pi / 2 - angle
+        error = self.setpoint - angle
         # print(error)
         # vel = self.joint_vel[:, self._pendulum_dof_idx[0]].unsqueeze(dim=1)
 

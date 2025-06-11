@@ -30,7 +30,7 @@ args_cli, hydra_args = parser.parse_known_args()
 # Clear Hydra-specific arguments from sys.argv
 sys.argv = [sys.argv[0]] + hydra_args
 
-# Initialize simulation app
+# Initialize sim app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 
@@ -55,16 +55,9 @@ if args_cli.video:
 import gymnasium as gym
 import random
 
-from isaaclab_dynamics.controllers import base_controllers, wrappers
+from isaaclab_dynamics.sim.skrl_link import IsaacRunnerWrapper
 from isaaclab_dynamics.utils.env_utils import configure_logging, save_configuration
 
-# from isaaclab.envs import (
-#     DirectMARLEnv,
-#     DirectMARLEnvCfg,
-#     DirectRLEnvCfg,
-#     ManagerBasedRLEnvCfg,
-#     multi_agent_to_single_agent,
-# )
 from isaaclab.utils.dict import print_dict
 
 import isaaclab_tasks  # noqa: F401
@@ -97,7 +90,7 @@ def record_env(env, log_dir):
 
 def setup_env(env_cfg):
     """
-    Prepare and initialize the simulation environment.
+    Prepare and initialize the sim environment.
 
     Args:
         env_cfg: Configuration object for the environment.
@@ -135,6 +128,8 @@ if algorithm == "ppo":
     agent_cfg_entry_point = "skrl_cfg_entry_point"
 elif algorithm == "pid":
     agent_cfg_entry_point = "pid_cfg_entry_point"
+elif algorithm == "random":
+    agent_cfg_entry_point = "random_cfg_entry_point"
 else:
     agent_cfg_entry_point = f"skrl_{algorithm}_cfg_entry_point"
 
@@ -142,7 +137,7 @@ else:
 @hydra_task_config(args_cli.task, agent_cfg_entry_point)
 def main(env_cfg, agent_cfg):
     """
-    Main function for setting up controllers and running the simulation.
+    Main function for setting up controllers and running the sim.
 
     Args:
         env_cfg: Configuration for the environment.
@@ -150,34 +145,19 @@ def main(env_cfg, agent_cfg):
     """
     # Initialize environment
     env_cfg.stiffness_enable = args_cli.spring
+    env_cfg.setpoint = args_cli.spring_setpoint
+    agent_cfg["range"] = args_cli.range
     env_cfg, env, seed, dt = setup_env(env_cfg)
 
     # Controller setup
-    if args_cli.controller == "rl":
-        controller = base_controllers.ControllerRL(args_cli=args_cli)
-    elif args_cli.controller == "keyboard":
-        controller = base_controllers.ControllerKeyboard(args_cli=args_cli)
-    elif args_cli.controller == "pid":
-        controller = base_controllers.ControllerPID(args_cli=args_cli)
-    elif args_cli.controller == "random":
-        controller = base_controllers.ControllerRandom(args_cli=args_cli)
-    elif args_cli.controller == "compound":
-        controller = base_controllers.ControllerCompound(args_cli=args_cli)
-    elif args_cli.controller == "pid_rl":
-        controller = base_controllers.ControllerRL(args_cli=args_cli)
-    else:
-        raise ValueError("Invalid controller specified.")
+    log_dir, resume_path = configure_logging(args_cli, agent_cfg)
+    controller = IsaacRunnerWrapper(args_cli=args_cli)
 
     # Wrap and configure environment
     env, _ = controller.setup(env, dt, agent_cfg, seed=seed)
 
     # Logging and video recording setup
-    log_dir, resume_path = configure_logging(args_cli, agent_cfg)
     env = record_env(env, log_dir)
-
-    if args_cli.record:
-        controller = wrappers.ControllerLogger(controller, log_dir, args_cli=args_cli)
-        print("Added a Logger to the controller. The observations and actions will be recorded.")
 
     # Save configurations
     save_configuration(args_cli, log_dir, env_cfg, agent_cfg)
@@ -185,8 +165,6 @@ def main(env_cfg, agent_cfg):
     # Run the environment with the controller
     controller.run(
         env,
-        simulation_app.is_running,
-        controller.iterate,
         resume_path=resume_path,
     )
     env.close()
@@ -196,5 +174,5 @@ if __name__ == "__main__":
     # Launch the main function
     main()
 
-    # Close the simulation app
+    # Close the sim app
     simulation_app.close()

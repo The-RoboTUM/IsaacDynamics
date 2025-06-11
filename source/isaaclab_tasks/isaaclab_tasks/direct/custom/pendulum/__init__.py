@@ -22,7 +22,8 @@ gym.register(
     kwargs={
         "env_cfg_entry_point": f"{__name__}.pendulum_grav_simple:PendulumSimpleDirectEnvCfg",
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
-        "pid_cfg_entry_point": f"{agents.__name__}:skrl_controller_cfg.yaml",
+        "pid_cfg_entry_point": f"{agents.__name__}:skrl_pid_cfg.yaml",
+        "random_cfg_entry_point": f"{agents.__name__}:skrl_random_cfg.yaml",
     },
 )
 

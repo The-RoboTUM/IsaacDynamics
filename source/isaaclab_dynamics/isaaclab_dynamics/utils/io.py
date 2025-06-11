@@ -5,6 +5,7 @@
 
 import argparse
 import json
+import numpy as np
 import os
 import sqlite3
 
@@ -55,6 +56,18 @@ def setup_parser():
         default=False,
         help="Enable a spring in the joints.",
     )
+    parser.add_argument(
+        "--spring_setpoint",
+        type=float,
+        default=np.pi / 2,
+        help="Setpoint for the spring.",
+    )
+    parser.add_argument(
+        "--range",
+        type=float,
+        default=5.0,
+        help="Range for the random controller.",
+    )
 
     # Checkpoint-related arguments
     parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint.")
@@ -90,8 +103,8 @@ def setup_parser():
         "--algorithm",
         type=str,
         default="PPO",
-        choices=["AMP", "PPO", "IPPO", "MAPPO"],
-        help="The RL algorithm used for training the skrl agent.",
+        # choices=["AMP", "PPO", "IPPO", "MAPPO"],
+        help="The algorithm to create the agent.",
     )
 
     # Experiment-specific arguments

@@ -125,7 +125,7 @@ gsettings set org.gnome.mutter check-alive-timeout 10000
 If you run out of GPU memory while using both isaac AND jax on it, then allow dynamic memory allocation to the start of
 your script:
 ```python
-# this is required to be able to run both simulation and learning in cpu
+# this is required to be able to run both sim and learning in cpu
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
 ```

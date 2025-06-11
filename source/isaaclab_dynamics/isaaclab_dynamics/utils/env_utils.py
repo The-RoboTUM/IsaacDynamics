@@ -95,5 +95,6 @@ def configure_logging(args_cli, agent_cfg):
                 other_dirs=["checkpoints"],
             )
         log_dir = os.path.dirname(os.path.dirname(resume_path))
+    args_cli.log_dir = log_dir
 
     return log_dir, resume_path
