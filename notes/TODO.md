@@ -1,13 +1,20 @@
 # TODO List
 
 ## 📌 Up-next Tasks
--
+- Re-write the readme
+- Implement the unfuzzy form of the KDE
+- Add some flags for ease of logging
+- Finish implementing the non-simplified version of the metric
+- Do the experiments of the 1-pendulum
+- Dig deeper into the theory, understand the metric and write thesis
 
 ## 🔄 In Progress
-- Fully separate the simulation and control algos
+- Finish implementing the variations of the 1-pendulum
 
 ## ✅ Completed
-- tbd
+- Look at the results for the unactuated pendulum
+- Take a look at the flags that you have, make them cleaner
+- Fully separate the simulation and control algos
 
 ## 💡 Future Ideas
 - Write a loading management class and make saving based on algorithm

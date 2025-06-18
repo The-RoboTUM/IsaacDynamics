@@ -104,7 +104,7 @@
     --controller random \
     --algorithm random \
     --duration 3.0 \
-    --max_episodes 100 \
+    --max_rollouts 100 \
     --spring \
     --record \
     --headless \

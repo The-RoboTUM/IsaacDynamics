@@ -283,7 +283,6 @@ class RandomAgent(BasicAgent):
             device=device,
             cfg=cfg,
         )
-        print(f"Range{cfg.get('range')}")
         self.effort_range = (
             -cfg.get("range", 5.0),
             cfg.get("range", 5.0),
@@ -293,3 +292,27 @@ class RandomAgent(BasicAgent):
     def act(self, states: jnp.ndarray, timestep: int, timesteps: int) -> jnp.ndarray:
         random_effort = np.random.uniform(self.effort_range[0], self.effort_range[1])
         return jnp.array([random_effort])
+
+
+class DummyAgent(BasicAgent):
+    def __init__(
+        self,
+        models: Mapping[str, Model],
+        memory: Memory | tuple[Memory] | None = None,
+        observation_space: int | tuple[int] | gymnasium.Space | None = None,
+        action_space: int | tuple[int] | gymnasium.Space | None = None,
+        device: str | jax.Device | None = None,
+        cfg: dict | None = None,
+    ) -> None:
+        super().__init__(
+            models=models,
+            memory=memory,
+            observation_space=observation_space,
+            action_space=action_space,
+            device=device,
+            cfg=cfg,
+        )
+        self.dt = cfg.get("dt", 1 / 120)
+
+    def act(self, states: jnp.ndarray, timestep: int, timesteps: int) -> jnp.ndarray:
+        return jnp.array([0.0])

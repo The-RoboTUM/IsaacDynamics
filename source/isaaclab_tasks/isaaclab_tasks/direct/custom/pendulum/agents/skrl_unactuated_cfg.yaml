@@ -1,0 +1,32 @@
+seed: 42
+
+models:
+  separate: False
+  policy:
+    class: DeterministicMixin  # minimal base model
+    clip_actions: False
+    network:
+      - name: net
+        input: STATES
+        layers: []  # no hidden layers
+        activations: none
+    output: ACTIONS
+
+memory:
+  class: RandomMemory
+  memory_size: -1  # automatically determined (same as agent:rollouts)
+
+agent:
+  class: unactuated
+  rollouts: 32
+  experiment:
+    directory: "pendulum_simple_direct"
+    experiment_name: ""
+    write_interval: auto
+    checkpoint_interval: auto
+
+trainer:
+  class: ExposedTrainer
+  timesteps: 4800
+  environment_info: log
+  stochastic_evaluation: True

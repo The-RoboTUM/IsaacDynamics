@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import argparse
+import ast
 import json
-import numpy as np
 import os
 import sqlite3
 
@@ -59,7 +59,7 @@ def setup_parser():
     parser.add_argument(
         "--spring_setpoint",
         type=float,
-        default=np.pi / 2,
+        default=90,
         help="Setpoint for the spring.",
     )
     parser.add_argument(
@@ -87,15 +87,15 @@ def setup_parser():
         help="Specify training or testing mode.",
     )
     parser.add_argument(
-        "--max_iterations",
+        "--max_rollouts",
         type=int,
-        default=None,
-        help="Maximum RL policy training iterations.",
+        default=100,
+        help="Maximum episodes to run for.",
     )
     parser.add_argument(
         "--ml_framework",
         type=str,
-        default="torch",
+        default="jax",
         choices=["torch", "jax", "jax-numpy"],
         help="ML framework for training the skrl agent.",
     )
@@ -150,6 +150,26 @@ def setup_parser():
         help="Show the probability distribution plots.",
     )
 
+    # Metric related arguments
+    parser.add_argument(
+        "--stoch_mode",
+        type=str,
+        default="full",
+        help="Mode for the control effort metric calculation.",
+    )
+    parser.add_argument(
+        "--episode_num",
+        type=int,
+        default=-1,
+        help="Number of episodes to calculate the metric.",
+    )
+    parser.add_argument(
+        "--results_file_name",
+        type=str,
+        default="control_effort.json",
+        help="Json file name for storing the results of the metric calculation.",
+    )
+
     return parser
 
 
@@ -171,6 +191,13 @@ def episode_counts(df):
     return num_complete_episodes, episode_len, last_episode_len
 
 
+def safe_json_bool(x):
+    try:
+        return json.loads(x.strip())[0]
+    except Exception:
+        raise ValueError(f"Bad value for truncated: {repr(x)}")
+
+
 def format_subset(df, ids: tuple[int, int]):
     # Filter by id
     df_sub = df[(df["id"] >= ids[0]) & (df["id"] < ids[1])].copy()
@@ -182,9 +209,13 @@ def format_subset(df, ids: tuple[int, int]):
     if isinstance(df_sub["actions"].iloc[0], str):
         df_sub["actions"] = df_sub["actions"].apply(json.loads)
 
+    # Decode the Truncated flag
+    df_sub["truncated"] = df_sub["truncated"].apply(lambda x: ast.literal_eval(x)[0])
+
     # Count the state and action space
     state_dim = len(df_sub["obs"].iloc[0])
     action_dim = len(df_sub["actions"].iloc[0])
+    rewards_dim = len(df_sub["rewards"].iloc[0])
 
     # Expand obs into separate columns
     obs_expanded = pd.DataFrame(df_sub["obs"].tolist(), columns=[f"obs_{i}" for i in range(state_dim)])
@@ -194,7 +225,11 @@ def format_subset(df, ids: tuple[int, int]):
     actions_expanded = pd.DataFrame(df_sub["actions"].tolist(), columns=[f"action_{i}" for i in range(action_dim)])
     df_sub = pd.concat([df_sub.drop(columns=["actions"]), actions_expanded], axis=1)
 
-    return df_sub, state_dim, action_dim
+    # Expand rewards into separate columns
+    rewards_expanded = pd.DataFrame(df_sub["rewards"].tolist(), columns=[f"rewards_{i}" for i in range(rewards_dim)])
+    df_sub = pd.concat([df_sub.drop(columns=["rewards"]), rewards_expanded], axis=1)
+
+    return df_sub, state_dim, action_dim, rewards_dim
 
 
 def load_database(log_dir):

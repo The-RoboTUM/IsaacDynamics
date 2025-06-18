@@ -38,9 +38,8 @@ class PendulumSimpleDirectEnvCfg(DirectRLEnvCfg):
 
     # robot
     stiffness_enable = False
-    setpoint = math.pi / 2
+    setpoint = 90
     robot_cfg: ArticulationCfg = PENDULUM_GRAV_CFG.replace(prim_path="/World/envs/env_.*/Robot")
-    # cart_dof_name = "slider_to_cart"
     pendulum_dof_name = "base_to_pendulum"
 
     # scene
@@ -57,7 +56,6 @@ class PendulumSimpleDirectEnvCfg(DirectRLEnvCfg):
     rew_scale_alive = 1.0
     rew_scale_terminated = -2.0
     rew_scale_pend_pos = -1.0
-    # rew_scale_cart_vel = -0.01
     rew_scale_pend_vel = -0.005
 
 
@@ -77,12 +75,10 @@ class PendulumSimpleDirectEnv(DirectRLEnv):
         # spring
         self.stiffness = 50
         self.spring_enable = cfg.stiffness_enable
-        self.setpoint = cfg.setpoint
+        self.setpoint = cfg.setpoint * math.pi / 180
 
     def _setup_scene(self):
         self.pendulum = Articulation(self.cfg.robot_cfg)
-        # add ground plane
-        # spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg())
         # clone and replicate
         self.scene.clone_environments(copy_from_source=False)
         # add articulation to scene
@@ -97,8 +93,6 @@ class PendulumSimpleDirectEnv(DirectRLEnv):
     def _apply_action(self) -> None:
         angle = self.joint_pos[:, self._pendulum_dof_idx[0]].unsqueeze(dim=1)
         error = self.setpoint - angle
-        # print(error)
-        # vel = self.joint_vel[:, self._pendulum_dof_idx[0]].unsqueeze(dim=1)
 
         actions = self.actions + error * self.stiffness * int(self.spring_enable)
 
@@ -121,11 +115,8 @@ class PendulumSimpleDirectEnv(DirectRLEnv):
             self.cfg.rew_scale_terminated,
             self.cfg.rew_scale_pend_pos,
             self.cfg.rew_scale_pend_vel,
-            # self.cfg.rew_scale_pole_vel,
             self.joint_pos[:, self._pendulum_dof_idx[0]],
             self.joint_vel[:, self._pendulum_dof_idx[0]],
-            # self.joint_pos[:, self._cart_dof_idx[0]],
-            # self.joint_vel[:, self._cart_dof_idx[0]],
             self.reset_terminated,
         )
         return total_reward
@@ -135,13 +126,6 @@ class PendulumSimpleDirectEnv(DirectRLEnv):
         self.joint_vel = self.pendulum.data.joint_vel
 
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        # out_of_bounds = torch.any(
-        #     torch.abs(self.joint_pos[:, self._pendulum_dof_idx]) > self.cfg.max_cart_pos,
-        #     dim=1,
-        # )
-        # out_of_bounds = out_of_bounds | torch.any(
-        #     torch.abs(self.joint_pos[:, self._pole_dof_idx]) > math.pi / 2, dim=1
-        # )
         return time_out, time_out
 
     def _reset_idx(self, env_ids: Sequence[int] | None):
@@ -174,20 +158,14 @@ def compute_rewards(
     rew_scale_alive: float,
     rew_scale_terminated: float,
     rew_scale_pend_pos: float,
-    # rew_scale_cart_vel: float,
     rew_scale_pend_vel: float,
     pend_pos: torch.Tensor,
     pend_vel: torch.Tensor,
-    # cart_pos: torch.Tensor,
-    # cart_vel: torch.Tensor,
     reset_terminated: torch.Tensor,
 ):
     rew_alive = rew_scale_alive * (1.0 - reset_terminated.float())
     rew_termination = rew_scale_terminated * reset_terminated.float()
     rew_pend_pos = rew_scale_pend_pos * torch.sum(torch.square(math.pi / 2 - pend_pos).unsqueeze(dim=1), dim=-1)
-    # rew_cart_vel = rew_scale_cart_vel * torch.sum(
-    #     torch.abs(cart_vel).unsqueeze(dim=1), dim=-1
-    # )
     rew_pend_vel = rew_scale_pend_vel * torch.sum(torch.abs(pend_vel).unsqueeze(dim=1), dim=-1)
     total_reward = rew_alive + rew_termination + rew_pend_pos + rew_pend_vel
     return total_reward

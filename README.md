@@ -33,19 +33,19 @@ pip install skrl["all"]
 
 To run an environment with a certain controller:
 ```bash
-./isaaclab.sh -p scripts/codesign/run.py --task <environment_handle> --controller <controler_name> --mode test
+./isaaclab.sh -p scripts/effort_calcs/run.py --task <environment_handle> --controller <controler_name> --mode test
 ```
 Note: In the future, the controllers will also have access points
 
 To train an environments:
 ```bash
-./isaaclab.sh -p scripts/codesign/run.py --task <environment_entry_point> --num_envs --controller <rl-based controller>
+./isaaclab.sh -p scripts/effort_calcs/run.py --task <environment_entry_point> --num_envs --controller <rl-based controller>
 <parallel_robots> --mode 'train'
 ```
 
 To visualize some test data:
 ```bash
-./isaaclab.sh -p ./scripts/codesign/visualize.py --task <environment_handle>  --ml_framework <dl-backend>
+./isaaclab.sh -p ./scripts/effort_calcs/visualize.py --task <environment_handle>  --ml_framework <dl-backend>
 ```
 
 ## Params
@@ -75,19 +75,19 @@ To visualize some test data:
 
 Run to train pendulum environment:
 ```bash
-./isaaclab.sh -p scripts/codesign/run.py --task Isaac-Pendulum-v0 --num_envs 64 --ml_framework jax
+./isaaclab.sh -p scripts/effort_calcs/run.py --task Isaac-Pendulum-v0 --num_envs 64 --ml_framework jax
 --controller 'rl' --headless --mode train
 ```
 
 Run to record some data on the logs:
 ```bash
-./isaaclab.sh -p scripts/codesign/run.py --task Isaac-Pendulum-v0 --num_envs 1 --ml_framework jax --mode test
+./isaaclab.sh -p scripts/effort_calcs/run.py --task Isaac-Pendulum-v0 --num_envs 1 --ml_framework jax --mode test
 --controller pid --record --duration 1.0 --max_runtime_iterations 1000 --headless
 ```
 
 Run to visualize the firs episode of the latest test:
 ```bash
-./isaaclab.sh -p ./scripts/codesign/visualize.py --task Isaac-Pendulum-v0  --ml_framework jax
+./isaaclab.sh -p ./scripts/effort_calcs/visualize.py --task Isaac-Pendulum-v0  --ml_framework jax
 ```
 
 ## Useful commands

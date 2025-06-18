@@ -123,15 +123,7 @@ def setup_env(env_cfg):
 
 # Algorithm configuration
 algorithm = args_cli.algorithm.lower()
-agent_cfg_entry_point = None
-if algorithm == "ppo":
-    agent_cfg_entry_point = "skrl_cfg_entry_point"
-elif algorithm == "pid":
-    agent_cfg_entry_point = "pid_cfg_entry_point"
-elif algorithm == "random":
-    agent_cfg_entry_point = "random_cfg_entry_point"
-else:
-    agent_cfg_entry_point = f"skrl_{algorithm}_cfg_entry_point"
+agent_cfg_entry_point = f"skrl_{algorithm}_cfg_entry_point"
 
 
 @hydra_task_config(args_cli.task, agent_cfg_entry_point)
@@ -146,10 +138,11 @@ def main(env_cfg, agent_cfg):
     # Initialize environment
     env_cfg.stiffness_enable = args_cli.spring
     env_cfg.setpoint = args_cli.spring_setpoint
-    agent_cfg["range"] = args_cli.range
     env_cfg, env, seed, dt = setup_env(env_cfg)
 
     # Controller setup
+    agent_cfg["range"] = args_cli.range
+    agent_cfg["trainer"]["timesteps"] = int(args_cli.max_rollouts * (env_cfg.episode_length_s / (2 * dt) - 1))
     log_dir, resume_path = configure_logging(args_cli, agent_cfg)
     controller = IsaacRunnerWrapper(args_cli=args_cli)
 

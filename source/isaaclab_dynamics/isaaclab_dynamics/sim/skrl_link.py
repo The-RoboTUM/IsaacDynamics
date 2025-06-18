@@ -50,8 +50,8 @@ class IsaacRunnerWrapper:
             skrl.config.jax.backend = "jax" if self.args_cli.ml_framework == "jax" else "numpy"
 
         if self.args_cli.mode == "train":
-            if self.args_cli.max_iterations:
-                self.agent_cfg["trainer"]["timesteps"] = self.args_cli.max_iterations * config["agent"]["rollouts"]
+            if self.args_cli.max_rollouts:
+                self.agent_cfg["trainer"]["timesteps"] = self.args_cli.max_rollouts * config["agent"]["rollouts"]
             self.agent_cfg["trainer"]["close_environment_at_exit"] = False
             self.agent_cfg["seed"] = seed if seed is not None else config["seed"]
         elif self.args_cli.mode == "test":
@@ -222,6 +222,10 @@ class ExpandedRunner(Runner):
             from isaaclab_dynamics.agents.base_agents import CONTROLLER_DEFAULT_CONFIG, RandomAgent
 
             component = CONTROLLER_DEFAULT_CONFIG if "default_config" in name else RandomAgent
+        elif name in ["unactuated", "unactuated_default_config"]:
+            from isaaclab_dynamics.agents.base_agents import CONTROLLER_DEFAULT_CONFIG, DummyAgent
+
+            component = CONTROLLER_DEFAULT_CONFIG if "default_config" in name else DummyAgent
 
         # multi-agent
         elif name in ["ippo", "ippo_default_config"]:

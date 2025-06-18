@@ -111,8 +111,14 @@ class ExposedTrainer(Trainer):
                 self.log["obs"].append(str(np.array(states).flatten().tolist()))
                 self.log["actions"].append(str(np.array(actions).flatten().tolist()))
                 self.log["rewards"].append(str(np.array(rewards).flatten().tolist()))
-                self.log["terminated"].append(str(np.array(terminated).flatten().tolist()))
-                self.log["truncated"].append(str(np.array(truncated).flatten().tolist()))
+                val_term = str(np.array(False).flatten().tolist())
+                if terminated.any():
+                    val_term = str(np.array(True).flatten().tolist())
+                self.log["terminated"].append(val_term)
+                val_trunc = str(np.array(False).flatten().tolist())
+                if truncated.any():
+                    val_trunc = str(np.array(True).flatten().tolist())
+                self.log["truncated"].append(val_trunc)
 
             for agent in self.agents:
                 agent.post_interaction(timestep, self.timesteps)
@@ -180,8 +186,14 @@ class ExposedTrainer(Trainer):
                 self.log["obs"].append(str(np.array(states).flatten().tolist()))
                 self.log["actions"].append(str(np.array(actions).flatten().tolist()))
                 self.log["rewards"].append(str(np.array(rewards).flatten().tolist()))
-                self.log["terminated"].append(str(np.array(terminated).flatten().tolist()))
-                self.log["truncated"].append(str(np.array(truncated).flatten().tolist()))
+                val_term = str(np.array(False).flatten().tolist())
+                if terminated.any():
+                    val_term = str(np.array(True).flatten().tolist())
+                self.log["terminated"].append(val_term)
+                val_trunc = str(np.array(False).flatten().tolist())
+                if truncated.any():
+                    val_trunc = str(np.array(True).flatten().tolist())
+                self.log["truncated"].append(val_trunc)
 
             for agent in self.agents:
                 super(type(agent), agent).post_interaction(timestep, self.timesteps)
@@ -210,6 +222,7 @@ class ExposedTrainer(Trainer):
         # reset env
         states, infos = self.env.reset()
 
+        step = 0
         for timestep in tqdm.tqdm(
             range(self.initial_timestep, self.timesteps),
             disable=self.disable_progressbar,
@@ -245,12 +258,18 @@ class ExposedTrainer(Trainer):
 
             if self.record:
                 self.log["id"].append(timestep)
-                self.log["step"].append(int(timestep))
+                self.log["step"].append(int(step))
                 self.log["obs"].append(str(np.array(states).flatten().tolist()))
                 self.log["actions"].append(str(np.array(actions).flatten().tolist()))
                 self.log["rewards"].append(str(np.array(rewards).flatten().tolist()))
-                self.log["terminated"].append(str(np.array(terminated).flatten().tolist()))
-                self.log["truncated"].append(str(np.array(truncated).flatten().tolist()))
+                val_term = str(np.array(False).flatten().tolist())
+                if terminated.any():
+                    val_term = str(np.array(True).flatten().tolist())
+                self.log["terminated"].append(val_term)
+                val_trunc = str(np.array(False).flatten().tolist())
+                if truncated.any():
+                    val_trunc = str(np.array(True).flatten().tolist())
+                self.log["truncated"].append(val_trunc)
 
             # post-interaction
             self.agents.post_interaction(timestep=timestep, timesteps=self.timesteps)
@@ -262,8 +281,10 @@ class ExposedTrainer(Trainer):
                 if terminated.any() or truncated.any():
                     with contextlib.nullcontext():
                         states, infos = self.env.reset()
+                    step = 0
                 else:
                     states = next_states
+                    step += 1
 
     def single_agent_eval(self) -> None:
         """Evaluate agent
@@ -281,6 +302,7 @@ class ExposedTrainer(Trainer):
         # reset env
         states, infos = self.env.reset()
 
+        step = 0
         for timestep in tqdm.tqdm(
             range(self.initial_timestep, self.timesteps),
             disable=self.disable_progressbar,
@@ -317,12 +339,18 @@ class ExposedTrainer(Trainer):
 
             if self.record:
                 self.log["id"].append(timestep)
-                self.log["step"].append(int(timestep))
+                self.log["step"].append(int(step))
                 self.log["obs"].append(str(np.array(states).flatten().tolist()))
                 self.log["actions"].append(str(np.array(actions).flatten().tolist()))
                 self.log["rewards"].append(str(np.array(rewards).flatten().tolist()))
-                self.log["terminated"].append(str(np.array(terminated).flatten().tolist()))
-                self.log["truncated"].append(str(np.array(truncated).flatten().tolist()))
+                val_term = str(np.array(False).flatten().tolist())
+                if terminated.any():
+                    val_term = str(np.array(True).flatten().tolist())
+                self.log["terminated"].append(val_term)
+                val_trunc = str(np.array(False).flatten().tolist())
+                if truncated.any():
+                    val_trunc = str(np.array(True).flatten().tolist())
+                self.log["truncated"].append(val_trunc)
 
             # post-interaction
             super(type(self.agents), self.agents).post_interaction(timestep=timestep, timesteps=self.timesteps)
@@ -334,8 +362,10 @@ class ExposedTrainer(Trainer):
                 if terminated.any() or truncated.any():
                     with contextlib.nullcontext():
                         states, infos = self.env.reset()
+                    step = 0
                 else:
                     states = next_states
+                    step += 1
 
     def save_log(self):
         if self.saved_logs or not self.record:
