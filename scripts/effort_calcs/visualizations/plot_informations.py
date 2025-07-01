@@ -60,25 +60,28 @@ for file_name in result_files:
     all_rows.extend(load_data(base_path / file_name))
 df = pd.DataFrame(all_rows)
 
+# Compute information-based metrics
+df["I_controller"] = -df["Delta_H_u"]
+df["I_y_given_u"] = -df["Delta_H_y_u"]
+df["I_unaccounted"] = df["I_y_given_u"] - df["I_controller"]
 
-# Compute efficiency
-def compute_efficiency(row):
-    return row["Delta_H_y_u"] / row["Delta_H_u"] if row["Delta_H_u"] < 0 else 0.0
-
-
-df["Efficiency"] = df.apply(compute_efficiency, axis=1)
+# Efficiency: how much information dynamics contributed per unit injected by controller
+df["Efficiency"] = df.apply(
+    lambda row: (row["I_unaccounted"] / row["I_controller"] if row["I_controller"] > 0 else 0.0),
+    axis=1,
+)
 
 # Melt for plotting
 melted_df = pd.melt(
     df,
     id_vars=["controller", "spring_setpoint"],
-    value_vars=["Delta_H_y_u", "Delta_H_u", "Delta_H_y", "Efficiency"],
+    value_vars=["I_y_given_u", "I_controller", "I_unaccounted", "Efficiency"],
     var_name="metric",
     value_name="value",
 )
 
 # Plot setup
-metrics = ["Delta_H_y_u", "Delta_H_u", "Delta_H_y", "Efficiency"]
+metrics = ["I_y_given_u", "I_controller", "I_unaccounted", "Efficiency"]
 spring_setpoint_labels = sorted(df["spring_setpoint"].unique())
 palette = sns.color_palette("tab10", n_colors=len(spring_setpoint_labels))
 label_colors = {label: palette[i] for i, label in enumerate(spring_setpoint_labels)}
@@ -93,7 +96,6 @@ for idx, metric in enumerate(metrics):
     ax = axes[idx]
     sub_df = melted_df[melted_df["metric"] == metric]
 
-    # Exclude random and unactuated only in Efficiency plot
     if metric == "Efficiency":
         sub_df = sub_df[~sub_df["controller"].isin(["random", "unactuated"])]
 
@@ -114,9 +116,15 @@ for idx, metric in enumerate(metrics):
                     label=label,
                 )
 
-    ax.set_title(metric)
+    title_map = {
+        "I_y_given_u": "−ΔH(y|u) = Total Information",
+        "I_controller": "−ΔH(u) = I_controller",
+        "I_unaccounted": "-(ΔH(y|u) - ΔH(u))",
+        "Efficiency": "I_unaccounted / I_controller",
+    }
+    ax.set_title(title_map.get(metric, metric))
     ax.set_xlabel("Controller")
-    ax.set_ylabel("ΔH (Bits)" if metric != "Efficiency" else "Ratio")
+    ax.set_ylabel("Information (bits)" if "I_" in metric else "Ratio")
     ax.set_xticks(range(len(controllers)))
     ax.set_xticklabels(controllers)
     ax.axhline(0, color="black", linestyle="--")
@@ -134,7 +142,7 @@ fig.legend(
 )
 
 plt.tight_layout(rect=[0, 0.08, 1, 1])
-output_path = Path("report_results/entropy_metric_efficiency_filtered.png")
+output_path = Path("report_results/information_conservation_plot.png")
 output_path.parent.mkdir(parents=True, exist_ok=True)
 plt.savefig(output_path)
 plt.show()

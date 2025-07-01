@@ -176,7 +176,7 @@ def build_matrices(df_clean, state_dim, action_dim, rewards_dim, episode_num=-1)
             episodes_obs.append(np.array(current_obs).T)  # shape: (state_dim, T)
             episodes_actions.append(np.array(current_actions).T)  # shape: (action_dim, T)
             episodes_rewards.append(np.array(current_rewards).T)
-            current_obs, current_actions = [], []
+            current_obs, current_actions, current_rewards = [], [], []
             episode_count += 1
             if episode_num > 0 and episode_count == episode_num:
                 break
@@ -188,8 +188,9 @@ def build_matrices(df_clean, state_dim, action_dim, rewards_dim, episode_num=-1)
     action_matrix = jnp.stack(
         [pad(e, max_len) for e in episodes_actions], axis=1
     )  # (action_dim, num_episodes, max_len)
+    rewards_matrix = jnp.stack([pad(e, max_len) for e in episodes_rewards], axis=1)
 
-    return obs_matrix, action_matrix
+    return obs_matrix, action_matrix, rewards_matrix, max_len
 
 
 def save_control_effort(
@@ -199,6 +200,7 @@ def save_control_effort(
     Delta_H_u_dt,
     Delta_H_y,
     Delta_H_y_dt,
+    avg_reward,
     save_dir="./report_results",
     experiment_name="unknown",
     results_file_name="control_effort.json",
@@ -218,6 +220,7 @@ def save_control_effort(
         "Delta_H_u_dt": Delta_H_u_dt,
         "Delta_H_y": Delta_H_y,
         "Delta_H_y_dt": Delta_H_y_dt,
+        "avg_reward": avg_reward,
     }
 
     # Load existing DB or initialize
@@ -238,6 +241,7 @@ def save_control_effort(
     print(f"INFO: Control effort (Controller) per second: {Delta_H_u_dt:.2f} Bits/s")
     print(f"INFO: Control effort (System): {Delta_H_y:.2f} Bits (per episode)")
     print(f"INFO: Control effort (System) per second: {Delta_H_y_dt:.2f} Bits/s")
+    print(f"INFO: Average Episode Reward: {avg_reward:.2f}")
     print(f"Saved control effort entry to {save_path}")
 
 
@@ -263,7 +267,9 @@ def main(env_cfg, agent_cfg):
     df_clean, state_dim, action_dim, rewards_dim = format_subset(df, (0, len(df)))
 
     # Build the matrices
-    obs_matrix, action_matrix = build_matrices(df_clean, state_dim, action_dim, episode_num=args_cli.episode_num)
+    obs_matrix, action_matrix, rewards_matrix, _ = build_matrices(
+        df_clean, state_dim, action_dim, rewards_dim, episode_num=args_cli.episode_num
+    )
 
     # Build the KDEs
     obs_kde_grid = build_kde_grid(obs_matrix, mode=args_cli.stoch_mode)
@@ -318,6 +324,11 @@ def main(env_cfg, agent_cfg):
     Delta_H_y_u_dt = Delta_H_y_u / (env_cfg.sim.dt * 2 * episode_len)
     Delta_H_u_dt = Delta_H_u / (env_cfg.sim.dt * 2 * episode_len)
 
+    # Calculate average reward per episode
+    avg_reward = float(rewards_matrix.mean())
+    if not np.isfinite(avg_reward):
+        raise ValueError(f"Invalid avg_reward: {avg_reward}")
+
     # Save the current entry in a JSON file
     save_control_effort(
         Delta_H_y_u,
@@ -326,6 +337,7 @@ def main(env_cfg, agent_cfg):
         Delta_H_u_dt,
         Delta_H_y,
         Delta_H_y_dt,
+        avg_reward,
         save_dir="./report_results",
         experiment_name=args_cli.experiment_name,
         results_file_name=args_cli.results_file_name,

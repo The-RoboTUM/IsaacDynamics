@@ -208,6 +208,8 @@ def format_subset(df, ids: tuple[int, int]):
         df_sub["obs"] = df_sub["obs"].apply(json.loads)
     if isinstance(df_sub["actions"].iloc[0], str):
         df_sub["actions"] = df_sub["actions"].apply(json.loads)
+    if isinstance(df_sub["rewards"].iloc[0], str):
+        df_sub["rewards"] = df_sub["rewards"].apply(json.loads)
 
     # Decode the Truncated flag
     df_sub["truncated"] = df_sub["truncated"].apply(lambda x: ast.literal_eval(x)[0])

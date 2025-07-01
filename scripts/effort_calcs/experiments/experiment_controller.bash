@@ -6,6 +6,7 @@ set -e
 SPRING_ENABLED=false
 COLLECT_ENABLED=false
 MAX_ROLLOUTS=100
+SPRING_SETPOINT=90
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -21,6 +22,10 @@ while [[ $# -gt 0 ]]; do
             MAX_ROLLOUTS="$2"
             shift 2
             ;;
+        --spring_setpoint)
+            SPRING_SETPOINT="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown argument: $1"
             exit 1
@@ -31,6 +36,7 @@ done
 echo ">>> SPRING ENABLED: $SPRING_ENABLED"
 echo ">>> COLLECT ENABLED: $COLLECT_ENABLED"
 echo ">>> MAX ROLLOUTS: $MAX_ROLLOUTS"
+echo ">>> SPRING SETPOINT: $SPRING_SETPOINT"
 
 SPRING_FLAG=""
 EXPERIMENT_SUFFIX="springless"
@@ -61,8 +67,9 @@ collect_rollout() {
         --max_rollouts "$MAX_ROLLOUTS" \
         --record \
         $SPRING_FLAG \
+        --spring_setpoint "$SPRING_SETPOINT" \
         $EXTRA_ARGS \
-        --headless
+        --headless > /dev/null
     echo ">>> Finished rollout collection for $CONTROLLER."
 }
 
@@ -76,8 +83,10 @@ calculate_metric() {
         --stoch_mode full \
         --episode_num "$MAX_ROLLOUTS" \
         $SPRING_FLAG \
-        --experiment_name controllers_"$CONTROLLER"_"$EXPERIMENT_SUFFIX" \
-        --results_file_name experiment_controllers_"$EXPERIMENT_SUFFIX".json
+        --spring_setpoint "$SPRING_SETPOINT" \
+        --experiment_name controllers_"$CONTROLLER"_"$EXPERIMENT_SUFFIX"_"$SPRING_SETPOINT" \
+        --results_file_name experiment_controllers_"$EXPERIMENT_SUFFIX"_"$SPRING_SETPOINT".json > /dev/null
+    echo ">>> Finished metric calculation for $CONTROLLER."
 }
 
 # === Step 1: Rollouts ===

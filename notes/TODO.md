@@ -2,16 +2,16 @@
 
 ## 📌 Up-next Tasks
 - Re-write the readme
-- Implement the unfuzzy form of the KDE
-- Add some flags for ease of logging
-- Finish implementing the non-simplified version of the metric
-- Do the experiments of the 1-pendulum
 - Dig deeper into the theory, understand the metric and write thesis
 
 ## 🔄 In Progress
-- Finish implementing the variations of the 1-pendulum
+- Do the experiments of the 1-pendulum
 
 ## ✅ Completed
+- Finish implementing the variations of the 1-pendulum
+- Finish implementing the non-simplified version of the metric
+- Add some flags for ease of logging
+- Implement the unfuzzy form of the KDE
 - Look at the results for the unactuated pendulum
 - Take a look at the flags that you have, make them cleaner
 - Fully separate the simulation and control algos
