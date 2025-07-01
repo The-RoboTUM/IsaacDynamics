@@ -16,6 +16,9 @@ through isaac lab.
 ## Installation
 
 Instructions for installation.
+
+TODO: Add the instructions from Isaac lab here
+
 Example:
 
 ```bash
@@ -31,38 +34,36 @@ pip install skrl["all"]
 
 ## Usage
 
-To run an environment with a certain controller:
-```bash
-./isaaclab.sh -p scripts/effort_calcs/run.py --task <environment_handle> --controller <controler_name> --mode test
-```
-Note: In the future, the controllers will also have access points
-
 To train an environments:
 ```bash
-./isaaclab.sh -p scripts/effort_calcs/run.py --task <environment_entry_point> --num_envs --controller <rl-based controller>
-<parallel_robots> --mode 'train'
+    ./isaaclab.sh -p scripts/run.py \
+        --task Isaac-Pendulum-Simple-Direct-v0 \
+        --num_envs 100 \
+        --ml_framework jax \
+        --mode train \
+        --algorithm *Controller \
+        --duration 3.0 \
+        --max_rollouts 100 \
+        --headless
 ```
 
 To visualize some test data:
 ```bash
-./isaaclab.sh -p ./scripts/effort_calcs/visualize.py --task <environment_handle>  --ml_framework <dl-backend>
+    ./isaaclab.sh -p scripts/run.py \
+        --task Isaac-Pendulum-Simple-Direct-v0 \
+        --num_envs 1 \
+        --ml_framework jax \
+        --mode test \
+        --algorithm *Controller \
+        --duration 3.0 \
+        --max_rollouts 10 \
+        --record
 ```
 
-## Params
+## Params TODO:
+To see the flags you can use for the `run.py` run `./isaaclab.sh -p scripts/run.py --help`
 
-- `--task`: Which environment are you using. All environments are defined in `source/isaaclab_tasks/isaaclab_tasks`
-- `--num_envs`: How many parallel environments to use now
-- `--ml_framework`: Either `torch` or `jax`, use jax for better results
-- `--experiment_name`: What are you calling the current run
-- `--debugger`: Set if want to connect to the pycharm debugger
-- `--model_path`: Only relevant for play, how to specify model loading destination, will use latest if not given
-- `--video`: Set if you want to record videos (required test time) (Extra flags: `--video_length`, `--video_interval`)
-- `--duration`: Time in seconds for each episode
-- `--controller`: Name of the controller you want to use with your system
-- `--mode`: If you want to run the current experiment in test or train mode
-- `--record`: If set it will record the observation and actions to databases in the logs
-
-## Information
+## Information (TDOD: Add Pedro's Notes)
 
 - To create an environment, a .usd file must be created from a .urdf
 - The .usd files from this project are to be found at `source/isaaclab_assets/isaaclab_assets/custom`. The .py files set up the simulation.
