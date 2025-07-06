@@ -11,15 +11,15 @@ def delta_entropy(dim, kde_model_obs, kde_model_actions, x_min, x_max, u_min, u_
 
     # Evaluation grid obs
     y_grid = np.linspace(x_min, x_max, num_points)
-    dy = (x_max - x_min) / num_points
+    dy = (x_max - x_min + 1e-12) / num_points
 
     # Evaluation grid actions
     u_grid = np.linspace(u_min, u_max, num_points)
-    du = (u_max - u_min) / num_points
+    du = (u_max - u_min + 1e-12) / num_points
 
     # Uniform prior density
-    uniform_density_obs = 1.0 / (x_max - x_min)
-    uniform_density_actions = 1.0 / (u_max - u_min)
+    uniform_density_obs = 1.0 / (x_max - x_min + 1e-12)
+    uniform_density_actions = 1.0 / (u_max - u_min + 1e-12)
 
     # Evaluate KDE at grid points
     kl_div_obs = 0.0

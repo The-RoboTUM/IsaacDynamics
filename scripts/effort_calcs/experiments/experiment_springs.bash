@@ -4,7 +4,7 @@ set -e
 
 # === Default config ===
 MAX_ROLLOUTS=100
-SPRING_SETPOINTS=(90 45 0)  # Add more setpoints here
+SPRING_SETPOINTS=(90 60 45 30 0)  # Add more setpoints here
 
 # === Parse arguments ===
 while [[ $# -gt 0 ]]; do

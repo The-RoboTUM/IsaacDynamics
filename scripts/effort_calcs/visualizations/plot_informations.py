@@ -50,7 +50,9 @@ def load_data(file_path: Path):
 result_files = [
     "experiment_controllers_springless_90.json",
     "experiment_controllers_spring_90.json",
+    "experiment_controllers_spring_60.json",
     "experiment_controllers_spring_45.json",
+    "experiment_controllers_spring_30.json",
     "experiment_controllers_spring_0.json",
 ]
 base_path = Path("/home/andrew/Documents/RoboTUM_Workspace/IsaacDynamics/report_results")
